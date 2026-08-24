@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { publishListingAction, PublishActionState } from "@/app/publicar/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Category } from "@/lib/types/domain";
 import { cn } from "@/lib/utils";
 
+const MAX_PHOTOS = 8;
+
 export function PublishForm({ categories }: { categories: Category[] }) {
   const [state, formAction, pending] = useActionState<PublishActionState, FormData>(
     publishListingAction,
@@ -16,6 +18,27 @@ export function PublishForm({ categories }: { categories: Category[] }) {
   );
   const [priceMode, setPriceMode] = useState<"consultar" | "precio">("consultar");
   const [isBusiness, setIsBusiness] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function syncInputFiles(files: File[]) {
+    const dt = new DataTransfer();
+    files.forEach((f) => dt.items.add(f));
+    if (fileInputRef.current) fileInputRef.current.files = dt.files;
+  }
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    const combined = [...photos, ...picked].slice(0, MAX_PHOTOS);
+    setPhotos(combined);
+    syncInputFiles(combined);
+  }
+
+  function removePhoto(index: number) {
+    const updated = photos.filter((_, i) => i !== index);
+    setPhotos(updated);
+    syncInputFiles(updated);
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
@@ -36,10 +59,63 @@ export function PublishForm({ categories }: { categories: Category[] }) {
         </div>
       </section>
 
+      {/* Fotos */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+          2. Fotos
+        </h2>
+        <p className="text-xs text-muted-foreground -mt-1">
+          Hasta {MAX_PHOTOS} fotos. La primera va a ser la foto principal del anuncio.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          {photos.map((file, i) => (
+            <div
+              key={`${file.name}-${i}`}
+              className="relative h-24 w-24 overflow-hidden rounded-xl border border-border bg-muted"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={URL.createObjectURL(file)}
+                alt={`Foto ${i + 1}`}
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                aria-label="Quitar foto"
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-xs font-bold text-foreground shadow"
+              >
+                ×
+              </button>
+              {i === 0 && (
+                <span className="absolute bottom-1 left-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  Principal
+                </span>
+              )}
+            </div>
+          ))}
+          {photos.length < MAX_PHOTOS && (
+            <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+              <span className="text-2xl leading-none">+</span>
+              <span className="text-xs">Agregar</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={handleFilesSelected}
+              />
+            </label>
+          )}
+        </div>
+        {/* Input real que viaja con el form; su FileList se mantiene sincronizado a mano */}
+        <input ref={fileInputRef} type="file" name="photos" multiple className="hidden" />
+      </section>
+
       {/* Detalle */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          2. Detalle del anuncio
+          3. Detalle del anuncio
         </h2>
         <div>
           <Label htmlFor="title">Título</Label>
@@ -60,7 +136,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
       {/* Precio */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          3. Precio
+          4. Precio
         </h2>
         <div className="flex gap-2">
           <button
@@ -104,7 +180,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
       {/* Ubicación */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          4. Ubicación
+          5. Ubicación
         </h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -121,7 +197,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
       {/* Contacto */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          5. Tus datos de contacto
+          6. Tus datos de contacto
         </h2>
         <p className="text-xs text-muted-foreground -mt-1">
           No hace falta crear una cuenta para publicar. Solo necesitamos cómo contactarte.

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { QuoteForm } from "@/components/quote-form";
+import { ListingGallery } from "@/components/listing-gallery";
 import { getListingById } from "@/lib/data/listings";
 import { formatPrice, formatRelativeDate } from "@/lib/format";
 
@@ -24,9 +25,7 @@ export default async function ListingDetailPage({
 
       <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <div className="aspect-[4/3] w-full rounded-2xl bg-muted flex items-center justify-center text-muted-foreground text-sm">
-            {listing.category?.name} — foto de referencia
-          </div>
+          <ListingGallery images={listing.images} categoryName={listing.category?.name} />
 
           <p className="mt-4 text-xs uppercase tracking-widest text-muted-foreground">
             {listing.category?.name}

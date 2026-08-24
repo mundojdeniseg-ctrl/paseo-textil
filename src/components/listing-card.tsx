@@ -1,7 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Listing } from "@/lib/types/domain";
-import { formatPrice, formatRelativeDate } from "@/lib/format";
+import { formatPrice, formatRelativeDate, getImageUrl } from "@/lib/format";
 
 function PriceLine({ listing }: { listing: Listing }) {
   if (listing.priceOnRequest) {
@@ -15,15 +16,28 @@ function PriceLine({ listing }: { listing: Listing }) {
 }
 
 export function ListingCard({ listing }: { listing: Listing }) {
+  const mainImage = listing.images[0];
+  const imageUrl = mainImage ? getImageUrl(mainImage.storagePath) : null;
+
   return (
     <Link
       href={`/anuncios/${listing.id}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-        <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
-          {listing.category?.name}
-        </div>
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={listing.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
+            {listing.category?.name}
+          </div>
+        )}
         {listing.businessProfile && (
           <Badge className="absolute left-2 top-2 rounded-full bg-background/90 text-foreground border border-border">
             {listing.businessProfile.businessName}

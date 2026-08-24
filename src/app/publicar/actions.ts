@@ -95,6 +95,28 @@ export async function publishListingAction(
       return { ok: false, message: `No se pudo publicar el anuncio: ${listingError?.message}` };
     }
     newListingId = listing.id;
+
+    const photos = formData
+      .getAll("photos")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+
+    for (let i = 0; i < photos.length; i++) {
+      const file = photos[i];
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const storagePath = `${newListingId}/${i}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("listing-images")
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      // Una foto que falla no debe tirar abajo la publicación del anuncio;
+      // se ignora esa foto puntual y se sigue con las demás.
+      if (!uploadError) {
+        await supabase
+          .from("listing_images")
+          .insert({ listing_id: newListingId, storage_path: storagePath, position: i });
+      }
+    }
   } else {
     const category = getStoreCategories().find((c) => c.slug === categorySlug);
     if (!category) {
