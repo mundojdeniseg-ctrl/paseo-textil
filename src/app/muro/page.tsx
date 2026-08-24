@@ -46,7 +46,9 @@ export default async function MuroPage() {
         {posts.length === 0 ? (
           <p className="text-center text-muted-foreground">Todavía no hay publicaciones. ¡Sé el primero!</p>
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          posts.map((post) => (
+            <PostCard key={post.id} post={post} path="/muro" isLoggedIn={isLoggedIn} />
+          ))
         )}
       </div>
     </div>

@@ -40,6 +40,8 @@ export default async function MiCuentaPage() {
           displayName={profile?.display_name ?? ""}
           phone={profile?.phone ?? ""}
           avatarUrl={getAvatarUrl(profile?.avatar_url)}
+          isProfilePublic={profile?.is_profile_public ?? true}
+          userId={user.id}
           businessProfile={
             businessProfile
               ? {

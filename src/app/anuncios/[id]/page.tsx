@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { QuoteForm } from "@/components/quote-form";
 import { ListingGallery } from "@/components/listing-gallery";
 import { getListingById } from "@/lib/data/listings";
@@ -80,7 +81,12 @@ export default async function ListingDetailPage({
             )}
 
             {listing.businessProfile && (
-              <div className="mt-4 flex items-center gap-3 border-t border-border pt-4">
+              <Link
+                href={listing.userId ? `/usuarios/${listing.userId}` : "#"}
+                className={`mt-4 flex items-center gap-3 border-t border-border pt-4 ${
+                  listing.userId ? "hover:opacity-80" : "pointer-events-none"
+                }`}
+              >
                 {getAvatarUrl(listing.businessProfile.logoUrl) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -101,7 +107,42 @@ export default async function ListingDetailPage({
                     <p className="text-xs text-muted-foreground">Perfil de negocio</p>
                   )}
                 </div>
-              </div>
+              </Link>
+            )}
+
+            {!listing.businessProfile && listing.seller && (
+              <Link
+                href={`/usuarios/${listing.seller.id}`}
+                className="mt-4 flex items-center gap-3 border-t border-border pt-4 hover:opacity-80"
+              >
+                {getAvatarUrl(listing.seller.avatarUrl) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getAvatarUrl(listing.seller.avatarUrl)!}
+                    alt={listing.seller.displayName}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+                    {listing.seller.displayName.charAt(0)}
+                  </span>
+                )}
+                <div>
+                  <p className="font-semibold leading-tight">{listing.seller.displayName}</p>
+                  <p className="text-xs text-muted-foreground">Ver perfil</p>
+                </div>
+              </Link>
+            )}
+
+            {listing.userId && (
+              <Button
+                render={<Link href={`/mensajes/${listing.userId}`} />}
+                nativeButton={false}
+                variant="outline"
+                className="mt-4 w-full rounded-full font-semibold"
+              >
+                Enviar mensaje directo
+              </Button>
             )}
           </div>
 

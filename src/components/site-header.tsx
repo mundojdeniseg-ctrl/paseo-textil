@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAvatarUrl } from "@/lib/format";
+import { getUnreadMessageCount } from "@/lib/data/messages";
 
 export async function SiteHeader() {
   let isLoggedIn = false;
   let avatarUrl: string | null = null;
+  let unreadCount = 0;
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const {
@@ -13,12 +15,12 @@ export async function SiteHeader() {
     } = await supabase.auth.getUser();
     isLoggedIn = Boolean(user);
     if (user) {
-      const { data: profile } = await supabase
-        .from("users")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+      const [{ data: profile }, unread] = await Promise.all([
+        supabase.from("users").select("avatar_url").eq("id", user.id).maybeSingle(),
+        getUnreadMessageCount(),
+      ]);
       avatarUrl = getAvatarUrl(profile?.avatar_url);
+      unreadCount = unread;
     }
   }
 
@@ -44,6 +46,16 @@ export async function SiteHeader() {
           <Link href="/anuncios?categoria=molderia" className="hover:text-foreground transition-colors">
             categorías
           </Link>
+          {isLoggedIn && (
+            <Link href="/mensajes" className="relative hover:text-foreground transition-colors">
+              mensajes
+              {unreadCount > 0 && (
+                <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">

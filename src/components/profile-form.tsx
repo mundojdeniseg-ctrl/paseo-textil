@@ -59,11 +59,15 @@ export function ProfileForm({
   displayName,
   phone,
   avatarUrl,
+  isProfilePublic,
+  userId,
   businessProfile,
 }: {
   displayName: string;
   phone: string;
   avatarUrl: string | null;
+  isProfilePublic: boolean;
+  userId: string;
   businessProfile: BusinessProfileData | null;
 }) {
   const [state, formAction, pending] = useActionState<ProfileActionState, FormData>(
@@ -89,6 +93,20 @@ export function ProfileForm({
         <div>
           <Label htmlFor="phone">WhatsApp / teléfono</Label>
           <Input id="phone" name="phone" defaultValue={phone} required />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="isProfilePublic"
+              defaultChecked={isProfilePublic}
+              className="h-4 w-4 rounded border-border"
+            />
+            Mostrar mi perfil público (otros ven tus publicaciones y anuncios)
+          </label>
+          <a href={`/usuarios/${userId}`} target="_blank" rel="noreferrer" className="text-primary underline shrink-0">
+            Ver mi perfil
+          </a>
         </div>
       </section>
 

@@ -49,6 +49,7 @@ export type Listing = {
   images: ListingImage[];
   category?: Category;
   businessProfile?: BusinessProfile | null;
+  seller?: { id: string; displayName: string; avatarUrl: string | null } | null;
 };
 
 export type QuoteRequest = {
@@ -67,6 +68,16 @@ export type PostMedia = {
   position: number;
 };
 
+export type PostComment = {
+  id: string;
+  postId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+};
+
 export type Post = {
   id: string;
   userId: string;
@@ -75,4 +86,34 @@ export type Post = {
   authorName: string;
   authorAvatarUrl: string | null;
   media: PostMedia[];
+  likesCount: number;
+  likedByMe: boolean;
+  comments: PostComment[];
+};
+
+export type PublicProfile = {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  isProfilePublic: boolean;
+  businessProfile: BusinessProfile | null;
+};
+
+export type MessageThread = {
+  otherUserId: string;
+  otherUserName: string;
+  otherUserAvatarUrl: string | null;
+  lastMessageBody: string;
+  lastMessageAt: string;
+  unreadCount: number;
+};
+
+export type Message = {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  listingId: string | null;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
 };

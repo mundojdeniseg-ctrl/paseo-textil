@@ -66,3 +66,71 @@ export async function createPostAction(
   revalidatePath("/muro");
   return { ok: true, message: "¡Publicado!" };
 }
+
+export async function toggleLikeAction(
+  postId: string,
+  path: string
+): Promise<{ ok: boolean; message?: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, message: "El muro todavía no está disponible en este entorno." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, message: "Tenés que ingresar a tu cuenta para dar like." };
+  }
+
+  const { data: existing } = await supabase
+    .from("post_likes")
+    .select("post_id")
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+  } else {
+    await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id });
+  }
+
+  revalidatePath(path);
+  return { ok: true };
+}
+
+export type CommentActionState = { ok: boolean; message: string } | null;
+
+export async function addCommentAction(
+  _prevState: CommentActionState,
+  formData: FormData
+): Promise<CommentActionState> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, message: "El muro todavía no está disponible en este entorno." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, message: "Tenés que ingresar a tu cuenta para comentar." };
+  }
+
+  const postId = String(formData.get("postId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  const path = String(formData.get("path") ?? "/muro");
+
+  if (!postId || !body) {
+    return { ok: false, message: "Escribí algo antes de comentar." };
+  }
+
+  const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, body });
+  if (error) {
+    return { ok: false, message: `No se pudo comentar: ${error.message}` };
+  }
+
+  revalidatePath(path);
+  return { ok: true, message: "" };
+}

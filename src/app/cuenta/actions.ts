@@ -117,6 +117,7 @@ export async function updateProfileAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const avatar = formData.get("avatar");
+  const isProfilePublic = formData.get("isProfilePublic") === "on";
   const hasBusiness = formData.get("hasBusiness") === "on";
   const businessName = String(formData.get("businessName") ?? "").trim();
   const businessPhone = String(formData.get("businessPhone") ?? "").trim();
@@ -128,10 +129,17 @@ export async function updateProfileAction(
     return { ok: false, message: "Completá tu nombre y teléfono." };
   }
 
-  const userUpdate: { id: string; display_name: string; phone: string; avatar_url?: string } = {
+  const userUpdate: {
+    id: string;
+    display_name: string;
+    phone: string;
+    is_profile_public: boolean;
+    avatar_url?: string;
+  } = {
     id: user.id,
     display_name: displayName,
     phone,
+    is_profile_public: isProfilePublic,
   };
   if (avatar instanceof File && avatar.size > 0) {
     const storagePath = await uploadProfileImage(supabase, user.id, avatar, "avatar");

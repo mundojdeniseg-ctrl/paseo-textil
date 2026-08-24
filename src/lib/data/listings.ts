@@ -78,6 +78,9 @@ function mapListing(row: any): Listing {
     ),
     category: row.category ? mapCategory(row.category) : undefined,
     businessProfile: mapBusinessProfile(row.business_profile),
+    seller: row.seller
+      ? { id: row.user_id, displayName: row.seller.display_name || "Usuario de Paseo Textil", avatarUrl: row.seller.avatar_url }
+      : null,
   };
 }
 
@@ -116,12 +119,32 @@ export async function getListingById(id: string): Promise<Listing | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("listings")
-    .select("*, category:categories(*), business_profile:business_profiles(*), images:listing_images(*)")
+    .select(
+      "*, category:categories(*), business_profile:business_profiles(*), images:listing_images(*), seller:users(display_name, avatar_url)"
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (error || !data) return null;
   return mapListing(data);
+}
+
+export async function getListingsByUser(userId: string): Promise<Listing[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*, category:categories(*), business_profile:business_profiles(*), images:listing_images(*)")
+    .eq("user_id", userId)
+    .eq("status", "activo")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getListingsByUser error:", error.message);
+    return [];
+  }
+  return (data ?? []).map(mapListing);
 }
 
 export async function getCategories(): Promise<Category[]> {
