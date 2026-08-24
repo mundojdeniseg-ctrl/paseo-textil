@@ -113,7 +113,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                 >
-                  WhatsApp
+                  WhatsApp: {whatsapp}
                 </a>
               )}
               {email && (
