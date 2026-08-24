@@ -1,69 +1,114 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ListingCard } from "@/components/listing-card";
+import { getCategories, getListings } from "@/lib/data/listings";
 
-export default function Home() {
+export default async function HomePage() {
+  const [listings, categories] = await Promise.all([getListings(), getCategories()]);
+  const recent = listings.slice(0, 6);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex flex-col">
+      {/* Hero */}
+      <section className="border-b border-border/70 bg-secondary/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            La plaza textil argentina
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+          <h1 className="mt-3 max-w-2xl text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl">
+            publicá y{" "}
+            <span className="text-primary">encontrá</span>
+            <br />
+            lo que el rubro textil necesita
+          </h1>
+          <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+            Moldería, confección, telas, insumos, maquinaria y servicios — publicá gratis,
+            sin cuenta obligatoria, y cotizá directo con talleres y proveedores de todo el país.
+          </p>
+
+          <form action="/anuncios" className="mt-8 flex max-w-xl flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              name="q"
+              placeholder="Buscar telas, maquinaria, servicios..."
+              className="h-12 flex-1 rounded-full border border-border bg-background px-5 text-sm outline-none ring-primary/30 focus:ring-2"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <Button type="submit" size="lg" className="h-12 rounded-full font-semibold">
+              Buscar
+            </Button>
+          </form>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button
+              render={<Link href="/publicar" />}
+              nativeButton={false}
+              size="lg"
+              className="rounded-full font-semibold"
+            >
+              Publicar anuncio gratis
+            </Button>
+            <Button
+              render={<Link href="/anuncios" />}
+              nativeButton={false}
+              size="lg"
+              variant="outline"
+              className="rounded-full font-semibold"
+            >
+              Ver categorías
+            </Button>
+          </div>
+
+          <div className="mt-12 flex flex-wrap gap-x-10 gap-y-4">
+            <Stat value={String(listings.length)} label="anuncios activos" />
+            <Stat value={String(categories.length)} label="categorías" />
+            <Stat value="$0" label="para publicar" />
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Categorías */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-10">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+          Categorías
+        </h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <Link
+              key={c.id}
+              href={`/anuncios?categoria=${c.slug}`}
+              className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition-colors hover:border-primary hover:text-primary"
+            >
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Anuncios recientes */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-16 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            Anuncios recientes
+          </h2>
+          <Link href="/anuncios" className="text-sm font-medium text-primary hover:underline">
+            Ver todos →
+          </Link>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recent.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <p className="text-3xl font-black tracking-tight">{value}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
     </div>
   );
 }
