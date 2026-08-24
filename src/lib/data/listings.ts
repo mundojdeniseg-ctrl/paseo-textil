@@ -44,6 +44,7 @@ function mapBusinessProfile(row: any): BusinessProfile | null {
     province: row.province,
     contactPhone: row.contact_phone,
     socialLinks: row.social_links ?? {},
+    logoUrl: row.logo_url ?? null,
   };
 }
 

@@ -10,6 +10,13 @@ export function getPostMediaUrl(storagePath: string) {
   return `${base}/storage/v1/object/public/post-media/${storagePath}`;
 }
 
+export function getAvatarUrl(storagePath: string | null | undefined) {
+  if (!storagePath) return null;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return null;
+  return `${base}/storage/v1/object/public/avatars/${storagePath}`;
+}
+
 export function formatPrice(value: number, currencyCode = "ARS") {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",

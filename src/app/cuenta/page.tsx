@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/app/cuenta/actions";
 import { Button } from "@/components/ui/button";
+import { getAvatarUrl } from "@/lib/format";
 
 export default async function MiCuentaPage() {
   const supabase = await createClient();
@@ -38,6 +39,7 @@ export default async function MiCuentaPage() {
         <ProfileForm
           displayName={profile?.display_name ?? ""}
           phone={profile?.phone ?? ""}
+          avatarUrl={getAvatarUrl(profile?.avatar_url)}
           businessProfile={
             businessProfile
               ? {
@@ -45,6 +47,7 @@ export default async function MiCuentaPage() {
                   contactPhone: businessProfile.contact_phone ?? "",
                   email: (businessProfile.social_links as { email?: string } | null)?.email ?? "",
                   address: businessProfile.address_text ?? "",
+                  logoUrl: getAvatarUrl(businessProfile.logo_url),
                 }
               : null
           }

@@ -11,15 +11,59 @@ type BusinessProfileData = {
   contactPhone: string;
   email: string;
   address: string;
+  logoUrl: string | null;
 };
+
+function ImagePicker({
+  id,
+  name,
+  currentUrl,
+  emptyLabel,
+}: {
+  id: string;
+  name: string;
+  currentUrl: string | null;
+  emptyLabel: string;
+}) {
+  const [preview, setPreview] = useState<string | null>(currentUrl);
+
+  return (
+    <div className="flex items-center gap-4">
+      <label
+        htmlFor={id}
+        className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-muted text-xs text-muted-foreground hover:border-primary"
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="" className="h-full w-full object-cover" />
+        ) : (
+          emptyLabel
+        )}
+      </label>
+      <input
+        id={id}
+        name={name}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          setPreview(file ? URL.createObjectURL(file) : currentUrl);
+        }}
+      />
+    </div>
+  );
+}
 
 export function ProfileForm({
   displayName,
   phone,
+  avatarUrl,
   businessProfile,
 }: {
   displayName: string;
   phone: string;
+  avatarUrl: string | null;
   businessProfile: BusinessProfileData | null;
 }) {
   const [state, formAction, pending] = useActionState<ProfileActionState, FormData>(
@@ -34,6 +78,10 @@ export function ProfileForm({
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Datos personales
         </h2>
+        <div>
+          <Label>Foto de perfil</Label>
+          <ImagePicker id="avatar" name="avatar" currentUrl={avatarUrl} emptyLabel="+ foto" />
+        </div>
         <div>
           <Label htmlFor="displayName">Nombre y apellido</Label>
           <Input id="displayName" name="displayName" defaultValue={displayName} required />
@@ -61,6 +109,10 @@ export function ProfileForm({
 
         {hasBusiness && (
           <div className="flex flex-col gap-3">
+            <div>
+              <Label>Logo del negocio</Label>
+              <ImagePicker id="logo" name="logo" currentUrl={businessProfile?.logoUrl ?? null} emptyLabel="+ logo" />
+            </div>
             <div>
               <Label htmlFor="businessName">Nombre del negocio</Label>
               <Input

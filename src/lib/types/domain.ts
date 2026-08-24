@@ -18,6 +18,7 @@ export type BusinessProfile = {
   province: string | null;
   contactPhone: string | null;
   socialLinks: Record<string, string>;
+  logoUrl: string | null;
 };
 
 export type ListingImage = {
@@ -72,5 +73,6 @@ export type Post = {
   body: string;
   createdAt: string;
   authorName: string;
+  authorAvatarUrl: string | null;
   media: PostMedia[];
 };

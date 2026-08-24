@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getAvatarUrl } from "@/lib/format";
 
 export async function SiteHeader() {
   let isLoggedIn = false;
+  let avatarUrl: string | null = null;
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     isLoggedIn = Boolean(user);
+    if (user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      avatarUrl = getAvatarUrl(profile?.avatar_url);
+    }
   }
 
   return (
@@ -41,8 +51,12 @@ export async function SiteHeader() {
             render={<Link href={isLoggedIn ? "/cuenta" : "/cuenta/ingresar"} />}
             nativeButton={false}
             variant="ghost"
-            className="hidden sm:inline-flex rounded-full"
+            className="hidden sm:inline-flex items-center gap-2 rounded-full"
           >
+            {avatarUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+            )}
             {isLoggedIn ? "Mi cuenta" : "Ingresar"}
           </Button>
           <Button

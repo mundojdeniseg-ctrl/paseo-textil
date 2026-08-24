@@ -1,13 +1,20 @@
 import { Post } from "@/lib/types/domain";
-import { formatRelativeDate, getPostMediaUrl } from "@/lib/format";
+import { formatRelativeDate, getAvatarUrl, getPostMediaUrl } from "@/lib/format";
 
 export function PostCard({ post }: { post: Post }) {
+  const avatarUrl = getAvatarUrl(post.authorAvatarUrl);
+
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
-          {post.authorName.charAt(0).toUpperCase()}
-        </span>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={post.authorName} className="h-9 w-9 rounded-full object-cover" />
+        ) : (
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+            {post.authorName.charAt(0).toUpperCase()}
+          </span>
+        )}
         <div>
           <p className="font-semibold leading-tight">{post.authorName}</p>
           <p className="text-xs text-muted-foreground">{formatRelativeDate(post.createdAt)}</p>

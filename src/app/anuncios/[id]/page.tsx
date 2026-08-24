@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { QuoteForm } from "@/components/quote-form";
 import { ListingGallery } from "@/components/listing-gallery";
 import { getListingById } from "@/lib/data/listings";
-import { formatPrice, formatRelativeDate } from "@/lib/format";
+import { formatPrice, formatRelativeDate, getAvatarUrl } from "@/lib/format";
 
 export default async function ListingDetailPage({
   params,
@@ -81,9 +81,18 @@ export default async function ListingDetailPage({
 
             {listing.businessProfile && (
               <div className="mt-4 flex items-center gap-3 border-t border-border pt-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
-                  {listing.businessProfile.businessName.charAt(0)}
-                </span>
+                {getAvatarUrl(listing.businessProfile.logoUrl) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getAvatarUrl(listing.businessProfile.logoUrl)!}
+                    alt={listing.businessProfile.businessName}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+                    {listing.businessProfile.businessName.charAt(0)}
+                  </span>
+                )}
                 <div>
                   <p className="font-semibold leading-tight">{listing.businessProfile.businessName}</p>
                   {listing.businessProfile.verificationStatus === "verificado" ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,37 @@ import { AuthActionState, signInAction, signUpAction } from "@/app/cuenta/action
 
 export function SignUpForm() {
   const [state, formAction, pending] = useActionState<AuthActionState, FormData>(signUpAction, null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex items-center gap-4">
+        <label
+          htmlFor="avatar"
+          className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-muted text-xs text-muted-foreground hover:border-primary"
+        >
+          {avatarPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
+          ) : (
+            "+ foto"
+          )}
+        </label>
+        <input
+          id="avatar"
+          name="avatar"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            setAvatarPreview(file ? URL.createObjectURL(file) : null);
+          }}
+        />
+        <p className="text-sm text-muted-foreground">
+          Foto de perfil <span className="block text-xs">Opcional, la podés agregar después.</span>
+        </p>
+      </div>
       <div>
         <Label htmlFor="displayName">Nombre y apellido</Label>
         <Input id="displayName" name="displayName" required placeholder="Tu nombre completo" />

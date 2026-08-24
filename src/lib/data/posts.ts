@@ -9,6 +9,7 @@ function mapPost(row: any): Post {
     body: row.body,
     createdAt: row.created_at,
     authorName: row.author?.display_name || "Usuario de Paseo Textil",
+    authorAvatarUrl: row.author?.avatar_url ?? null,
     media: (row.media ?? [])
       .sort((a: PostMedia, b: PostMedia) => a.position - b.position)
       .map(
@@ -29,7 +30,7 @@ export async function getPosts(): Promise<Post[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:users(display_name), media:post_media(*)")
+    .select("*, author:users(display_name, avatar_url), media:post_media(*)")
     .order("created_at", { ascending: false });
 
   if (error) {

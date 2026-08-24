@@ -51,6 +51,7 @@ export const LISTINGS: Listing[] = [
       province: "Buenos Aires",
       contactPhone: "+54 11 5555-0101",
       socialLinks: { instagram: "https://instagram.com/textilesriachuelo" },
+      logoUrl: null,
     },
   },
   {
@@ -107,6 +108,7 @@ export const LISTINGS: Listing[] = [
       province: "Santa Fe",
       contactPhone: "+54 341 555-0303",
       socialLinks: {},
+      logoUrl: null,
     },
   },
   {
@@ -140,6 +142,7 @@ export const LISTINGS: Listing[] = [
       province: "Córdoba",
       contactPhone: null,
       socialLinks: { instagram: "https://instagram.com/molderiasur" },
+      logoUrl: null,
     },
   },
   {
@@ -194,6 +197,7 @@ export const LISTINGS: Listing[] = [
       province: "Buenos Aires",
       contactPhone: "+54 223 555-0606",
       socialLinks: {},
+      logoUrl: null,
     },
   },
 ];

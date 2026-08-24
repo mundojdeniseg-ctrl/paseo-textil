@@ -155,6 +155,7 @@ export async function publishListingAction(
             province,
             contactPhone,
             socialLinks: {},
+            logoUrl: null,
           }
         : null,
     };
