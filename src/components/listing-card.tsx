@@ -8,11 +8,25 @@ function PriceLine({ listing }: { listing: Listing }) {
   if (listing.priceOnRequest) {
     return <span className="font-semibold text-foreground">Consultar precio</span>;
   }
-  const parts: string[] = [];
-  if (listing.priceRetail) parts.push(`${formatPrice(listing.priceRetail, listing.currencyCode)} x menor`);
-  if (listing.priceWholesale) parts.push(`${formatPrice(listing.priceWholesale, listing.currencyCode)} x mayor`);
-  if (parts.length === 0) return <span className="font-semibold text-foreground">Consultar precio</span>;
-  return <span className="font-semibold text-foreground">{parts.join(" · ")}</span>;
+  // Si solo hay un precio cargado (lo más común: servicios, promos variables),
+  // se muestra simple, sin la etiqueta "x mayor/x menor" que no aplica.
+  if (listing.priceRetail && listing.priceWholesale) {
+    return (
+      <span className="font-semibold text-foreground">
+        {formatPrice(listing.priceRetail, listing.currencyCode)} x menor ·{" "}
+        {formatPrice(listing.priceWholesale, listing.currencyCode)} x mayor
+      </span>
+    );
+  }
+  const singlePrice = listing.priceRetail ?? listing.priceWholesale;
+  if (singlePrice) {
+    return (
+      <span className="font-semibold text-foreground">
+        {formatPrice(singlePrice, listing.currencyCode)}
+      </span>
+    );
+  }
+  return <span className="font-semibold text-foreground">Consultar precio</span>;
 }
 
 export function ListingCard({ listing }: { listing: Listing }) {

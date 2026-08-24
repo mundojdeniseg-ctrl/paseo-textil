@@ -17,6 +17,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
     null
   );
   const [priceMode, setPriceMode] = useState<"consultar" | "precio">("consultar");
+  const [hasWholesale, setHasWholesale] = useState(false);
   const [isBusiness, setIsBusiness] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -164,15 +165,28 @@ export function PublishForm({ categories }: { categories: Category[] }) {
         </div>
         <input type="hidden" name="priceMode" value={priceMode} />
         {priceMode === "precio" && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-3">
             <div>
-              <Label htmlFor="priceRetail">Precio por menor (ARS)</Label>
-              <Input id="priceRetail" name="priceRetail" type="number" min="0" placeholder="opcional" />
+              <Label htmlFor="priceRetail">{hasWholesale ? "Precio por menor (ARS)" : "Precio (ARS)"}</Label>
+              <Input id="priceRetail" name="priceRetail" type="number" min="0" placeholder="Ej: 15000" />
             </div>
-            <div>
-              <Label htmlFor="priceWholesale">Precio por mayor (ARS)</Label>
-              <Input id="priceWholesale" name="priceWholesale" type="number" min="0" placeholder="opcional" />
-            </div>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={hasWholesale}
+                onChange={(e) => setHasWholesale(e.target.checked)}
+                className="h-4 w-4 rounded border-border"
+              />
+              Tengo un precio distinto por mayor
+            </label>
+
+            {hasWholesale && (
+              <div>
+                <Label htmlFor="priceWholesale">Precio por mayor (ARS)</Label>
+                <Input id="priceWholesale" name="priceWholesale" type="number" min="0" placeholder="Ej: 12000" />
+              </div>
+            )}
           </div>
         )}
       </section>

@@ -4,6 +4,12 @@ export function getImageUrl(storagePath: string) {
   return `${base}/storage/v1/object/public/listing-images/${storagePath}`;
 }
 
+export function getPostMediaUrl(storagePath: string) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return null;
+  return `${base}/storage/v1/object/public/post-media/${storagePath}`;
+}
+
 export function formatPrice(value: number, currencyCode = "ARS") {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",

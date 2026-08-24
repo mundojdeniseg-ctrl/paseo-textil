@@ -62,21 +62,21 @@ export default async function ListingDetailPage({
           <div className="rounded-2xl border border-border bg-card p-5">
             {listing.priceOnRequest ? (
               <p className="text-2xl font-black">Consultar precio</p>
-            ) : (
+            ) : listing.priceRetail && listing.priceWholesale ? (
               <div className="space-y-1">
-                {listing.priceRetail && (
-                  <p className="text-2xl font-black">
-                    {formatPrice(listing.priceRetail, listing.currencyCode)}
-                    <span className="ml-1 text-sm font-normal text-muted-foreground">x menor</span>
-                  </p>
-                )}
-                {listing.priceWholesale && (
-                  <p className="text-lg font-bold text-primary">
-                    {formatPrice(listing.priceWholesale, listing.currencyCode)}
-                    <span className="ml-1 text-sm font-normal text-muted-foreground">x mayor</span>
-                  </p>
-                )}
+                <p className="text-2xl font-black">
+                  {formatPrice(listing.priceRetail, listing.currencyCode)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">x menor</span>
+                </p>
+                <p className="text-lg font-bold text-primary">
+                  {formatPrice(listing.priceWholesale, listing.currencyCode)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">x mayor</span>
+                </p>
               </div>
+            ) : (
+              <p className="text-2xl font-black">
+                {formatPrice((listing.priceRetail ?? listing.priceWholesale)!, listing.currencyCode)}
+              </p>
             )}
 
             {listing.businessProfile && (

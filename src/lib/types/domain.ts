@@ -57,3 +57,20 @@ export type QuoteRequest = {
   requesterPhone?: string;
   message: string;
 };
+
+export type PostMedia = {
+  id: string;
+  postId: string;
+  storagePath: string;
+  mediaType: "image" | "video";
+  position: number;
+};
+
+export type Post = {
+  id: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+  authorName: string;
+  media: PostMedia[];
+};
