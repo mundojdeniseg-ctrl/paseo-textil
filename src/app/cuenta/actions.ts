@@ -1,9 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+async function siteOrigin() {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  return `${proto}://${host}`;
+}
 
 // Sube a bucket "avatars" bajo "{userId}/{kind}.ext" con upsert, asi una
 // nueva foto siempre reemplaza a la anterior en vez de acumular archivos.
@@ -98,6 +106,64 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export type PasswordResetActionState = { ok: boolean; message: string } | null;
+
+export async function requestPasswordResetAction(
+  _prevState: PasswordResetActionState,
+  formData: FormData
+): Promise<PasswordResetActionState> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, message: "Las cuentas todavía no están disponibles en este entorno." };
+  }
+
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { ok: false, message: "Ingresá tu email." };
+  }
+
+  const origin = await siteOrigin();
+  const supabase = await createClient();
+  // No se distingue error de "no existe esa cuenta" a proposito: evita que
+  // alguien use este formulario para averiguar que emails estan registrados.
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm?next=/cuenta/restablecer`,
+  });
+
+  return {
+    ok: true,
+    message: "Si ese email tiene una cuenta, te mandamos un link para elegir una contraseña nueva.",
+  };
+}
+
+export async function updatePasswordAction(
+  _prevState: PasswordResetActionState,
+  formData: FormData
+): Promise<PasswordResetActionState> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, message: "Las cuentas todavía no están disponibles en este entorno." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, message: "El link venció o ya se usó. Pedí uno nuevo." };
+  }
+
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 6) {
+    return { ok: false, message: "La contraseña tiene que tener al menos 6 caracteres." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { ok: false, message: `No se pudo actualizar: ${error.message}` };
+  }
+
+  redirect("/cuenta?password=actualizada");
 }
 
 export type ProfileActionState = { ok: boolean; message: string } | null;

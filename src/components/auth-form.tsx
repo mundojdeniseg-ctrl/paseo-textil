@@ -5,7 +5,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AuthActionState, signInAction, signUpAction } from "@/app/cuenta/actions";
+import {
+  AuthActionState,
+  signInAction,
+  signUpAction,
+  PasswordResetActionState,
+  requestPasswordResetAction,
+  updatePasswordAction,
+} from "@/app/cuenta/actions";
 
 export function SignUpForm() {
   const [state, formAction, pending] = useActionState<AuthActionState, FormData>(signUpAction, null);
@@ -79,7 +86,12 @@ export function SignInForm() {
         <Input id="email" name="email" type="email" required placeholder="tu@email.com" />
       </div>
       <div>
-        <Label htmlFor="password">Contraseña</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Contraseña</Label>
+          <Link href="/cuenta/olvide-password" className="text-xs text-primary underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         <Input id="password" name="password" type="password" required placeholder="Tu contraseña" />
       </div>
       {state && !state.ok && (
@@ -94,6 +106,59 @@ export function SignInForm() {
           Creá una
         </Link>
       </p>
+    </form>
+  );
+}
+
+export function RequestPasswordResetForm() {
+  const [state, formAction, pending] = useActionState<PasswordResetActionState, FormData>(
+    requestPasswordResetAction,
+    null
+  );
+
+  if (state?.ok) {
+    return <p className="rounded-xl bg-primary/10 p-3 text-sm text-primary">{state.message}</p>;
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" required placeholder="tu@email.com" />
+      </div>
+      {state && !state.ok && (
+        <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{state.message}</p>
+      )}
+      <Button type="submit" disabled={pending} size="lg" className="rounded-full font-semibold">
+        {pending ? "Enviando..." : "Mandarme el link"}
+      </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/cuenta/ingresar" className="text-primary underline">
+          Volver a ingresar
+        </Link>
+      </p>
+    </form>
+  );
+}
+
+export function UpdatePasswordForm() {
+  const [state, formAction, pending] = useActionState<PasswordResetActionState, FormData>(
+    updatePasswordAction,
+    null
+  );
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <div>
+        <Label htmlFor="password">Contraseña nueva</Label>
+        <Input id="password" name="password" type="password" required minLength={6} placeholder="Mínimo 6 caracteres" />
+      </div>
+      {state && !state.ok && (
+        <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{state.message}</p>
+      )}
+      <Button type="submit" disabled={pending} size="lg" className="rounded-full font-semibold">
+        {pending ? "Guardando..." : "Guardar contraseña"}
+      </Button>
     </form>
   );
 }
