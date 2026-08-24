@@ -57,7 +57,7 @@ export async function getPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select(
-      "*, author:users!posts_user_id_fkey(display_name, avatar_url), media:post_media(*), likes:post_likes(user_id), comments:post_comments(*, author:users!post_comments_user_id_fkey(display_name, avatar_url))"
+      "*, author:users!posts_user_id_fkey(display_name, avatar_url, is_profile_public), media:post_media(*), likes:post_likes(user_id), comments:post_comments(*, author:users!post_comments_user_id_fkey(display_name, avatar_url))"
     )
     .order("created_at", { ascending: false });
 
@@ -65,7 +65,14 @@ export async function getPosts(): Promise<Post[]> {
     console.error("getPosts error:", error.message);
     return [];
   }
-  return (data ?? []).map((row) => mapPost(row, user?.id ?? null));
+
+  // El muro es publico, pero un perfil marcado como privado no deberia
+  // mostrar sus publicaciones aca tampoco (solo en /usuarios/{id}, que ya
+  // respeta ese flag) -- salvo que sean las propias del que esta mirando.
+  const visible = (data ?? []).filter(
+    (row) => row.author?.is_profile_public !== false || row.user_id === user?.id
+  );
+  return visible.map((row) => mapPost(row, user?.id ?? null));
 }
 
 export async function getPostsByUser(userId: string): Promise<Post[]> {

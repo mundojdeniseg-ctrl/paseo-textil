@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile-form";
@@ -5,7 +6,12 @@ import { signOutAction } from "@/app/cuenta/actions";
 import { Button } from "@/components/ui/button";
 import { getAvatarUrl } from "@/lib/format";
 
-export default async function MiCuentaPage() {
+export default async function MiCuentaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ avatarError?: string }>;
+}) {
+  const { avatarError } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,6 +40,15 @@ export default async function MiCuentaPage() {
         </form>
       </div>
       <p className="mt-2 text-muted-foreground">{user.email}</p>
+      <Link href="/mis-anuncios" className="mt-2 inline-block text-sm text-primary underline">
+        Ver mis anuncios
+      </Link>
+
+      {avatarError && (
+        <p className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+          Tu cuenta se creó bien, pero no pudimos guardar la foto de perfil. Probá subirla de nuevo acá abajo.
+        </p>
+      )}
 
       <div className="mt-8">
         <ProfileForm

@@ -67,14 +67,24 @@ export async function signUpAction(
   // Si la confirmacion de mail esta desactivada, signUp ya deja la sesion
   // activa y se puede subir la foto de una. Si no, el usuario la agrega
   // despues desde "Mi cuenta" (todavia no hay sesion para subir a storage).
+  // La cuenta ya quedo creada en este punto -- si la foto falla no hay que
+  // tirar abajo el signup, pero tampoco redirigir como si nada avisando de
+  // que la foto no se guardo.
+  let avatarFailed = false;
   if (data.session && data.user && avatar instanceof File && avatar.size > 0) {
     const storagePath = await uploadProfileImage(supabase, data.user.id, avatar, "avatar");
     if (storagePath) {
-      await supabase.from("users").update({ avatar_url: storagePath }).eq("id", data.user.id);
+      const { error: avatarError } = await supabase
+        .from("users")
+        .update({ avatar_url: storagePath })
+        .eq("id", data.user.id);
+      avatarFailed = Boolean(avatarError);
+    } else {
+      avatarFailed = true;
     }
   }
 
-  redirect("/cuenta?bienvenido=1");
+  redirect(avatarFailed ? "/cuenta?bienvenido=1&avatarError=1" : "/cuenta?bienvenido=1");
 }
 
 export async function signInAction(

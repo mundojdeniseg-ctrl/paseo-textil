@@ -66,6 +66,17 @@ export function SignUpForm() {
       {state && !state.ok && (
         <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{state.message}</p>
       )}
+      <p className="text-xs text-muted-foreground">
+        Al crear tu cuenta aceptás nuestros{" "}
+        <Link href="/legales/terminos" className="text-primary underline">
+          términos y condiciones
+        </Link>{" "}
+        y nuestra{" "}
+        <Link href="/legales/privacidad" className="text-primary underline">
+          política de privacidad
+        </Link>
+        .
+      </p>
       <Button type="submit" disabled={pending} size="lg" className="rounded-full font-semibold">
         {pending ? "Creando cuenta..." : "Crear cuenta"}
       </Button>

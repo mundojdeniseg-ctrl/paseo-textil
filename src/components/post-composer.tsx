@@ -25,7 +25,12 @@ export function PostComposer() {
   }
 
   return (
-    <PostComposerForm key={formKey} formAction={formAction} pending={pending} state={state} />
+    <div>
+      <PostComposerForm key={formKey} formAction={formAction} pending={pending} state={state} />
+      {lastHandledState?.ok && lastHandledState.message && lastHandledState.message !== "¡Publicado!" && (
+        <p className="mt-2 rounded-xl bg-primary/10 p-3 text-sm text-primary">{lastHandledState.message}</p>
+      )}
+    </div>
   );
 }
 

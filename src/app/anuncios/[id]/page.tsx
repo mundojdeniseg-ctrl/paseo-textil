@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QuoteForm } from "@/components/quote-form";
 import { ListingGallery } from "@/components/listing-gallery";
+import { ReportButton } from "@/components/report-button";
 import { getListingById } from "@/lib/data/listings";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatPrice, formatRelativeDate, getAvatarUrl } from "@/lib/format";
 
 export default async function ListingDetailPage({
@@ -15,6 +17,17 @@ export default async function ListingDetailPage({
   const { id } = await params;
   const listing = await getListingById(id);
   if (!listing) notFound();
+
+  let isOwner = false;
+  let isLoggedIn = false;
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isLoggedIn = Boolean(user);
+    isOwner = Boolean(user && listing.userId === user.id);
+  }
 
   const attributeEntries = Object.entries(listing.attributes);
 
@@ -34,9 +47,18 @@ export default async function ListingDetailPage({
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
             {listing.title}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {listing.city}, {listing.province} · publicado {formatRelativeDate(listing.createdAt)}
-          </p>
+          <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+            <span>
+              {listing.city}, {listing.province} · publicado {formatRelativeDate(listing.createdAt)}
+            </span>
+            {isOwner ? (
+              <Link href={`/anuncios/${listing.id}/editar`} className="text-primary underline">
+                Editar
+              </Link>
+            ) : (
+              <ReportButton targetType="listing" targetId={listing.id} />
+            )}
+          </div>
 
           <p className="mt-6 whitespace-pre-line leading-relaxed">{listing.description}</p>
 
@@ -134,14 +156,30 @@ export default async function ListingDetailPage({
               </Link>
             )}
 
-            {listing.userId && (
+            {!listing.businessProfile && !listing.seller && (listing.contactName || listing.contactPhone) && (
+              <div className="mt-4 border-t border-border pt-4">
+                {listing.contactName && <p className="font-semibold leading-tight">{listing.contactName}</p>}
+                {listing.contactPhone && (
+                  <a
+                    href={`https://wa.me/${listing.contactPhone.replace(/[^0-9]/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  >
+                    Escribir por WhatsApp
+                  </a>
+                )}
+              </div>
+            )}
+
+            {listing.userId && !isOwner && (
               <Button
-                render={<Link href={`/mensajes/${listing.userId}`} />}
+                render={<Link href={isLoggedIn ? `/mensajes/${listing.userId}` : "/cuenta/ingresar"} />}
                 nativeButton={false}
                 variant="outline"
                 className="mt-4 w-full rounded-full font-semibold"
               >
-                Enviar mensaje directo
+                {isLoggedIn ? "Enviar mensaje directo" : "Iniciá sesión para escribir"}
               </Button>
             )}
           </div>

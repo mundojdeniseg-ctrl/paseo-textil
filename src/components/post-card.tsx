@@ -3,6 +3,7 @@ import { Post } from "@/lib/types/domain";
 import { formatRelativeDate, getAvatarUrl, getPostMediaUrl } from "@/lib/format";
 import { LikeButton } from "@/components/like-button";
 import { CommentsSection } from "@/components/comments-section";
+import { ReportButton } from "@/components/report-button";
 
 export function PostCard({
   post,
@@ -57,18 +58,23 @@ export function PostCard({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
-        <LikeButton
-          postId={post.id}
-          path={path}
-          initialLiked={post.likedByMe}
-          initialCount={post.likesCount}
-          isLoggedIn={isLoggedIn}
-        />
-        <span className="text-sm text-muted-foreground">
-          {post.comments.length > 0 &&
-            `${post.comments.length} comentario${post.comments.length > 1 ? "s" : ""}`}
-        </span>
+      <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <LikeButton
+              postId={post.id}
+              path={path}
+              initialLiked={post.likedByMe}
+              initialCount={post.likesCount}
+              isLoggedIn={isLoggedIn}
+            />
+            <span className="text-sm text-muted-foreground">
+              {post.comments.length > 0 &&
+                `${post.comments.length} comentario${post.comments.length > 1 ? "s" : ""}`}
+            </span>
+          </div>
+          <ReportButton targetType="post" targetId={post.id} />
+        </div>
       </div>
 
       <CommentsSection postId={post.id} path={path} comments={post.comments} isLoggedIn={isLoggedIn} />

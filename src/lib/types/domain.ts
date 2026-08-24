@@ -44,6 +44,8 @@ export type Listing = {
   province: string;
   countryCode: string;
   status: ListingStatus;
+  contactName: string | null;
+  contactPhone: string | null;
   createdAt: string;
   expiresAt: string;
   images: ListingImage[];

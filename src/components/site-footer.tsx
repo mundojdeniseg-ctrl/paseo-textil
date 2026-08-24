@@ -18,6 +18,12 @@ export function SiteFooter() {
           <Link href="/publicar" className="hover:text-foreground transition-colors">
             Publicar anuncio
           </Link>
+          <Link href="/legales/terminos" className="hover:text-foreground transition-colors">
+            Términos y condiciones
+          </Link>
+          <Link href="/legales/privacidad" className="hover:text-foreground transition-colors">
+            Privacidad
+          </Link>
         </nav>
       </div>
       <div className="border-t border-border/70">

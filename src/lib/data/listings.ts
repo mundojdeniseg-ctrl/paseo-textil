@@ -66,6 +66,8 @@ function mapListing(row: any): Listing {
     province: row.province ?? "",
     countryCode: row.country_code,
     status: row.status,
+    contactName: row.contact_name ?? null,
+    contactPhone: row.contact_phone ?? null,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     images: (row.images ?? []).map(
@@ -142,6 +144,26 @@ export async function getListingsByUser(userId: string): Promise<Listing[]> {
 
   if (error) {
     console.error("getListingsByUser error:", error.message);
+    return [];
+  }
+  return (data ?? []).map(mapListing);
+}
+
+// A diferencia de getListingsByUser (perfil publico, solo activos), esta
+// trae TODOS los estados -- es para el propio dueno en "Mis anuncios".
+export async function getMyListings(userId: string): Promise<Listing[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .select("*, category:categories(*), business_profile:business_profiles(*), images:listing_images(*)")
+    .eq("user_id", userId)
+    .neq("status", "eliminado")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getMyListings error:", error.message);
     return [];
   }
   return (data ?? []).map(mapListing);

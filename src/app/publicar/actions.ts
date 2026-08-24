@@ -1,11 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { addStoreListing, getStoreCategories } from "@/lib/data/store";
 import { Listing } from "@/lib/types/domain";
 
 export type PublishActionState = { ok: false; message: string } | null;
+
+const MAX_PHOTOS = 8;
 
 function newId() {
   return `l-${Math.random().toString(36).slice(2, 10)}`;
@@ -42,6 +45,9 @@ export async function publishListingAction(
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     const { data: category, error: categoryError } = await supabase
       .from("categories")
@@ -54,17 +60,22 @@ export async function publishListingAction(
 
     let businessProfileId: string | null = null;
     if (businessName) {
+      // Upsert por user_id (que es unique): si el usuario logueado ya tiene
+      // un perfil de negocio (creado desde "Mi cuenta"), lo reutiliza en vez
+      // de chocar contra esa restriccion. Como invitado (user_id null) cada
+      // publicacion crea su propio perfil, igual que antes.
       const { data: bp, error: bpError } = await supabase
         .from("business_profiles")
-        // user_id queda null: un negocio publicado como invitado (sin cuenta)
-        // no tiene un usuario real al que enlazar todavía.
-        .insert({
-          user_id: null,
-          business_name: businessName,
-          city,
-          province,
-          contact_phone: contactPhone,
-        })
+        .upsert(
+          {
+            user_id: user?.id ?? null,
+            business_name: businessName,
+            city,
+            province,
+            contact_phone: contactPhone,
+          },
+          user ? { onConflict: "user_id" } : undefined
+        )
         .select("id")
         .single();
       if (bpError) {
@@ -76,8 +87,8 @@ export async function publishListingAction(
     const { data: listing, error: listingError } = await supabase
       .from("listings")
       .insert({
-        user_id: null,
-        guest_edit_token: crypto.randomUUID(),
+        user_id: user?.id ?? null,
+        guest_edit_token: user ? null : crypto.randomUUID(),
         business_profile_id: businessProfileId,
         category_id: category.id,
         title,
@@ -87,6 +98,11 @@ export async function publishListingAction(
         price_on_request: priceOnRequest,
         city,
         province,
+        // Se guardan siempre, tenga o no perfil de negocio: son el unico
+        // canal de contacto para un anuncio de invitado sin negocio, que
+        // antes se perdian por completo.
+        contact_name: contactName,
+        contact_phone: contactPhone,
       })
       .select("id")
       .single();
@@ -98,7 +114,8 @@ export async function publishListingAction(
 
     const photos = formData
       .getAll("photos")
-      .filter((f): f is File => f instanceof File && f.size > 0);
+      .filter((f): f is File => f instanceof File && f.size > 0)
+      .slice(0, MAX_PHOTOS);
 
     for (let i = 0; i < photos.length; i++) {
       const file = photos[i];
@@ -140,6 +157,8 @@ export async function publishListingAction(
       province,
       countryCode: "AR",
       status: "activo",
+      contactName,
+      contactPhone,
       createdAt: now,
       expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
       images: [],
@@ -164,4 +183,155 @@ export async function publishListingAction(
   }
 
   redirect(`/anuncios/${newListingId}?publicado=1`);
+}
+
+export type UpdateListingActionState = { ok: false; message: string } | null;
+
+export async function updateListingAction(
+  _prevState: UpdateListingActionState,
+  formData: FormData
+): Promise<UpdateListingActionState> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, message: "No disponible en este entorno." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, message: "Tu sesión expiró, volvé a ingresar." };
+  }
+
+  const listingId = String(formData.get("listingId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const categorySlug = String(formData.get("category") ?? "");
+  const city = String(formData.get("city") ?? "").trim();
+  const province = String(formData.get("province") ?? "").trim();
+  const priceMode = String(formData.get("priceMode") ?? "consultar");
+  const priceRetailRaw = String(formData.get("priceRetail") ?? "");
+  const priceWholesaleRaw = String(formData.get("priceWholesale") ?? "");
+
+  if (!listingId || !title || !description || !categorySlug || !city || !province) {
+    return { ok: false, message: "Completá título, descripción, categoría y ubicación." };
+  }
+
+  const { data: category, error: categoryError } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", categorySlug)
+    .maybeSingle();
+  if (categoryError || !category) {
+    return { ok: false, message: "Elegí una categoría válida." };
+  }
+
+  const priceWholesale = priceMode === "precio" && priceWholesaleRaw ? Number(priceWholesaleRaw) : null;
+  const priceRetail = priceMode === "precio" && priceRetailRaw ? Number(priceRetailRaw) : null;
+  const priceOnRequest = priceMode === "consultar";
+
+  const { data: updated, error: updateError } = await supabase
+    .from("listings")
+    .update({
+      category_id: category.id,
+      title,
+      description,
+      price_wholesale: priceWholesale,
+      price_retail: priceRetail,
+      price_on_request: priceOnRequest,
+      city,
+      province,
+    })
+    .eq("id", listingId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (updateError || !updated) {
+    return { ok: false, message: "No se pudo guardar el anuncio." };
+  }
+
+  const { count: existingCount } = await supabase
+    .from("listing_images")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId);
+
+  let position = existingCount ?? 0;
+  const remainingSlots = Math.max(0, MAX_PHOTOS - position);
+  const photos = formData
+    .getAll("photos")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, remainingSlots);
+
+  for (const file of photos) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const storagePath = `${listingId}/${position}-${safeName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("listing-images")
+      .upload(storagePath, file, { contentType: file.type, upsert: false });
+    if (!uploadError) {
+      await supabase.from("listing_images").insert({ listing_id: listingId, storage_path: storagePath, position });
+      position++;
+    }
+  }
+
+  redirect(`/anuncios/${listingId}?actualizado=1`);
+}
+
+export async function deleteListingImageAction(
+  imageId: string,
+  storagePath: string,
+  listingId: string
+): Promise<{ ok: boolean }> {
+  if (!isSupabaseConfigured()) return { ok: false };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false };
+
+  // Chequeo de propiedad propio ademas de la RLS: la accion no debe confiar
+  // solo en la policy de la base para saber si el que pide el borrado es el
+  // dueno del anuncio.
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("id")
+    .eq("id", listingId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!listing) return { ok: false };
+
+  const { error } = await supabase.from("listing_images").delete().eq("id", imageId);
+  if (error) return { ok: false };
+
+  await supabase.storage.from("listing-images").remove([storagePath]);
+  revalidatePath(`/anuncios/${listingId}/editar`);
+  return { ok: true };
+}
+
+export type ListingStatus = "activo" | "pausado" | "eliminado";
+
+export async function setListingStatusAction(
+  listingId: string,
+  status: ListingStatus
+): Promise<{ ok: boolean; message?: string }> {
+  if (!isSupabaseConfigured()) return { ok: false, message: "No disponible en este entorno." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Tu sesión expiró." };
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ status })
+    .eq("id", listingId)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/mis-anuncios");
+  return { ok: true };
 }

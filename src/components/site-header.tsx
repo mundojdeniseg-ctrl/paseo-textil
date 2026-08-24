@@ -47,14 +47,19 @@ export async function SiteHeader() {
             categorías
           </Link>
           {isLoggedIn && (
-            <Link href="/mensajes" className="relative hover:text-foreground transition-colors">
-              mensajes
-              {unreadCount > 0 && (
-                <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
+            <>
+              <Link href="/mis-anuncios" className="hover:text-foreground transition-colors">
+                mis anuncios
+              </Link>
+              <Link href="/mensajes" className="relative hover:text-foreground transition-colors">
+                mensajes
+                {unreadCount > 0 && (
+                  <span className="absolute -right-3 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
         </nav>
 
