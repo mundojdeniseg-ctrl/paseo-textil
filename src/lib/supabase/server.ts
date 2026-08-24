@@ -1,15 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-// Cliente de Supabase para uso en Server Components / Server Actions.
-// No se usa todavia (la app corre sobre datos de prueba en src/lib/data/store.ts)
-// — queda listo para cuando existan credenciales reales en .env.local.
 export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -27,5 +24,11 @@ export async function createClient() {
         },
       },
     }
+  );
+}
+
+export function isSupabaseConfigured() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { addStoreListing, getStoreCategories } from "@/lib/data/store";
 import { Listing } from "@/lib/types/domain";
 
@@ -33,49 +34,111 @@ export async function publishListingAction(
     return { ok: false, message: "Dejanos tu nombre y un WhatsApp/teléfono de contacto." };
   }
 
-  const category = getStoreCategories().find((c) => c.slug === categorySlug);
-  if (!category) {
-    return { ok: false, message: "Elegí una categoría válida." };
-  }
+  const priceWholesale = priceMode === "precio" && priceWholesaleRaw ? Number(priceWholesaleRaw) : null;
+  const priceRetail = priceMode === "precio" && priceRetailRaw ? Number(priceRetailRaw) : null;
+  const priceOnRequest = priceMode === "consultar";
 
-  const id = newId();
-  const now = new Date().toISOString();
+  let newListingId: string;
 
-  const listing: Listing = {
-    id,
-    userId: null,
-    businessProfileId: businessName ? `bp-${id}` : null,
-    categoryId: category.id,
-    title,
-    description,
-    attributes: {},
-    priceWholesale: priceMode === "precio" && priceWholesaleRaw ? Number(priceWholesaleRaw) : null,
-    priceRetail: priceMode === "precio" && priceRetailRaw ? Number(priceRetailRaw) : null,
-    priceOnRequest: priceMode === "consultar",
-    currencyCode: "ARS",
-    city,
-    province,
-    countryCode: "AR",
-    status: "activo",
-    createdAt: now,
-    expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-    images: [],
-    category,
-    businessProfile: businessName
-      ? {
-          id: `bp-${id}`,
-          userId: `u-${id}`,
-          businessName,
-          description: null,
-          verificationStatus: "sin_verificar",
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+
+    const { data: category, error: categoryError } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", categorySlug)
+      .maybeSingle();
+    if (categoryError || !category) {
+      return { ok: false, message: "Elegí una categoría válida." };
+    }
+
+    let businessProfileId: string | null = null;
+    if (businessName) {
+      const { data: bp, error: bpError } = await supabase
+        .from("business_profiles")
+        // user_id queda null: un negocio publicado como invitado (sin cuenta)
+        // no tiene un usuario real al que enlazar todavía.
+        .insert({
+          user_id: null,
+          business_name: businessName,
           city,
           province,
-          contactPhone,
-          socialLinks: {},
-        }
-      : null,
-  };
+          contact_phone: contactPhone,
+        })
+        .select("id")
+        .single();
+      if (bpError) {
+        return { ok: false, message: `No se pudo crear el perfil de negocio: ${bpError.message}` };
+      }
+      businessProfileId = bp.id;
+    }
 
-  addStoreListing(listing);
-  redirect(`/anuncios/${id}?publicado=1`);
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .insert({
+        user_id: null,
+        guest_edit_token: crypto.randomUUID(),
+        business_profile_id: businessProfileId,
+        category_id: category.id,
+        title,
+        description,
+        price_wholesale: priceWholesale,
+        price_retail: priceRetail,
+        price_on_request: priceOnRequest,
+        city,
+        province,
+      })
+      .select("id")
+      .single();
+
+    if (listingError || !listing) {
+      return { ok: false, message: `No se pudo publicar el anuncio: ${listingError?.message}` };
+    }
+    newListingId = listing.id;
+  } else {
+    const category = getStoreCategories().find((c) => c.slug === categorySlug);
+    if (!category) {
+      return { ok: false, message: "Elegí una categoría válida." };
+    }
+    const id = newId();
+    const now = new Date().toISOString();
+    const listing: Listing = {
+      id,
+      userId: null,
+      businessProfileId: businessName ? `bp-${id}` : null,
+      categoryId: category.id,
+      title,
+      description,
+      attributes: {},
+      priceWholesale,
+      priceRetail,
+      priceOnRequest,
+      currencyCode: "ARS",
+      city,
+      province,
+      countryCode: "AR",
+      status: "activo",
+      createdAt: now,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+      images: [],
+      category,
+      businessProfile: businessName
+        ? {
+            id: `bp-${id}`,
+            userId: `u-${id}`,
+            businessName,
+            description: null,
+            verificationStatus: "sin_verificar",
+            city,
+            province,
+            contactPhone,
+            socialLinks: {},
+          }
+        : null,
+    };
+    addStoreListing(listing);
+    newListingId = id;
+  }
+
+  redirect(`/anuncios/${newListingId}?publicado=1`);
 }
