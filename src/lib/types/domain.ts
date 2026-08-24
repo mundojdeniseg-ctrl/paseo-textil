@@ -96,6 +96,7 @@ export type Post = {
 export type PublicProfile = {
   id: string;
   displayName: string;
+  phone: string | null;
   avatarUrl: string | null;
   isProfilePublic: boolean;
   businessProfile: BusinessProfile | null;

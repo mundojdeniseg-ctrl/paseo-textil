@@ -6,7 +6,11 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
 
   const supabase = await createClient();
   const [{ data: profile }, { data: businessProfile }] = await Promise.all([
-    supabase.from("users").select("id, display_name, avatar_url, is_profile_public").eq("id", userId).maybeSingle(),
+    supabase
+      .from("users")
+      .select("id, display_name, phone, avatar_url, is_profile_public")
+      .eq("id", userId)
+      .maybeSingle(),
     supabase.from("business_profiles").select("*").eq("user_id", userId).maybeSingle(),
   ]);
 
@@ -15,6 +19,7 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
   return {
     id: profile.id,
     displayName: profile.display_name || "Usuario de Paseo Textil",
+    phone: profile.phone || null,
     avatarUrl: profile.avatar_url,
     isProfilePublic: profile.is_profile_public,
     businessProfile: businessProfile
