@@ -111,7 +111,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   href={waLink(whatsapp)}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1FBE5A]"
                 >
                   WhatsApp: {whatsapp}
                 </a>

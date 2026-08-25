@@ -2,8 +2,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getThread } from "@/lib/data/messages";
-import { getAvatarUrl, formatRelativeDate } from "@/lib/format";
+import { getAvatarUrl } from "@/lib/format";
 import { MessageForm } from "@/components/message-form";
+import { MessageThread } from "@/components/message-thread";
 
 export default async function ThreadPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -48,36 +49,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ userId:
       </div>
 
       <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-border bg-card">
-        <div className="flex flex-col gap-2 p-4">
-          {messages.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Todavía no hay mensajes. Escribí el primero.
-            </p>
-          ) : (
-            messages.map((m) => {
-              const isMine = m.senderId === user.id;
-              return (
-                <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
-                      isMine ? "bg-primary text-primary-foreground" : "bg-muted"
-                    }`}
-                  >
-                    <p className="whitespace-pre-line leading-snug">{m.body}</p>
-                    <p
-                      className={`mt-1 text-right text-[10px] ${
-                        isMine ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatRelativeDate(m.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
+        <MessageThread initialMessages={messages} currentUserId={user.id} otherUserId={otherUser.id} />
         <MessageForm recipientId={otherUser.id} />
       </div>
     </div>
