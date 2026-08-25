@@ -19,7 +19,7 @@ async function uploadProfileImage(
   supabase: SupabaseServerClient,
   userId: string,
   file: File,
-  kind: "avatar" | "logo"
+  kind: "avatar" | "logo" | "cover"
 ): Promise<string | null> {
   const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const storagePath = `${userId}/${kind}.${ext}`;
@@ -193,13 +193,9 @@ export async function updateProfileAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const avatar = formData.get("avatar");
+  const cover = formData.get("cover");
+  const removeCover = formData.get("removeCover") === "on";
   const isProfilePublic = formData.get("isProfilePublic") === "on";
-  const hasBusiness = formData.get("hasBusiness") === "on";
-  const businessName = String(formData.get("businessName") ?? "").trim();
-  const businessPhone = String(formData.get("businessPhone") ?? "").trim();
-  const businessEmail = String(formData.get("businessEmail") ?? "").trim();
-  const businessAddress = String(formData.get("businessAddress") ?? "").trim();
-  const logo = formData.get("logo");
 
   if (!displayName || !phone) {
     return { ok: false, message: "Completá tu nombre y teléfono." };
@@ -211,15 +207,27 @@ export async function updateProfileAction(
     phone: string;
     is_profile_public: boolean;
     avatar_url?: string;
+    cover_url?: string | null;
   } = {
     id: user.id,
     display_name: displayName,
     phone,
     is_profile_public: isProfilePublic,
   };
+
+  let avatarFailed = false;
+  let coverFailed = false;
   if (avatar instanceof File && avatar.size > 0) {
     const storagePath = await uploadProfileImage(supabase, user.id, avatar, "avatar");
     if (storagePath) userUpdate.avatar_url = storagePath;
+    else avatarFailed = true;
+  }
+  if (removeCover) {
+    userUpdate.cover_url = null;
+  } else if (cover instanceof File && cover.size > 0) {
+    const storagePath = await uploadProfileImage(supabase, user.id, cover, "cover");
+    if (storagePath) userUpdate.cover_url = storagePath;
+    else coverFailed = true;
   }
 
   // Upsert en vez de update: si la fila no existe todavia (por ejemplo cuentas
@@ -230,34 +238,12 @@ export async function updateProfileAction(
     return { ok: false, message: `No se pudo guardar tu perfil: ${userError.message}` };
   }
 
-  if (hasBusiness) {
-    if (!businessName || !businessPhone) {
-      return { ok: false, message: "Para el perfil de negocio, el nombre y el WhatsApp son obligatorios." };
-    }
-    const businessUpdate: {
-      user_id: string;
-      business_name: string;
-      contact_phone: string;
-      social_links: Record<string, string>;
-      address_text: string | null;
-      logo_url?: string;
-    } = {
-      user_id: user.id,
-      business_name: businessName,
-      contact_phone: businessPhone,
-      social_links: businessEmail ? { email: businessEmail } : {},
-      address_text: businessAddress || null,
+  if (avatarFailed || coverFailed) {
+    const failedParts = [avatarFailed && "la foto de perfil", coverFailed && "la portada"].filter(Boolean);
+    return {
+      ok: false,
+      message: `Guardamos el resto de tus datos, pero no se pudo subir ${failedParts.join(" ni ")}. Probá con otra imagen.`,
     };
-    if (logo instanceof File && logo.size > 0) {
-      const storagePath = await uploadProfileImage(supabase, user.id, logo, "logo");
-      if (storagePath) businessUpdate.logo_url = storagePath;
-    }
-    const { error: bpError } = await supabase
-      .from("business_profiles")
-      .upsert(businessUpdate, { onConflict: "user_id" });
-    if (bpError) {
-      return { ok: false, message: `No se pudo guardar el perfil de negocio: ${bpError.message}` };
-    }
   }
 
   return { ok: true, message: "Perfil actualizado." };

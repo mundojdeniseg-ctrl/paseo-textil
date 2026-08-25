@@ -16,9 +16,11 @@ export type BusinessProfile = {
   verificationStatus: "sin_verificar" | "pendiente" | "verificado" | "rechazado";
   city: string | null;
   province: string | null;
+  addressText: string | null;
   contactPhone: string | null;
   socialLinks: Record<string, string>;
   logoUrl: string | null;
+  isFeatured: boolean;
 };
 
 export type ListingImage = {
@@ -98,8 +100,9 @@ export type PublicProfile = {
   displayName: string;
   phone: string | null;
   avatarUrl: string | null;
+  coverUrl: string | null;
   isProfilePublic: boolean;
-  businessProfile: BusinessProfile | null;
+  businessProfiles: BusinessProfile[];
 };
 
 export type MessageThread = {

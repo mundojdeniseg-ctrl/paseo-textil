@@ -1,8 +1,19 @@
 import { PublishForm } from "@/components/publish-form";
 import { getCategories } from "@/lib/data/listings";
+import { getMyBusinesses } from "@/lib/data/profiles";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function PublicarPage() {
   const categories = await getCategories();
+
+  let myBusinesses: Awaited<ReturnType<typeof getMyBusinesses>> = [];
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) myBusinesses = await getMyBusinesses(user.id);
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
@@ -13,7 +24,7 @@ export default async function PublicarPage() {
       </p>
 
       <div className="mt-8">
-        <PublishForm categories={categories} />
+        <PublishForm categories={categories} myBusinesses={myBusinesses} />
       </div>
     </div>
   );

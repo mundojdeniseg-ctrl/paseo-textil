@@ -21,10 +21,7 @@ export default async function MiCuentaPage({
     redirect("/cuenta/ingresar");
   }
 
-  const [{ data: profile }, { data: businessProfile }] = await Promise.all([
-    supabase.from("users").select("*").eq("id", user.id).maybeSingle(),
-    supabase.from("business_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-  ]);
+  const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).maybeSingle();
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
@@ -40,9 +37,14 @@ export default async function MiCuentaPage({
         </form>
       </div>
       <p className="mt-2 text-muted-foreground">{user.email}</p>
-      <Link href="/mis-anuncios" className="mt-2 inline-block text-sm text-primary underline">
-        Ver mis anuncios
-      </Link>
+      <div className="mt-2 flex gap-4">
+        <Link href="/mis-anuncios" className="inline-block text-sm text-primary underline">
+          Ver mis anuncios
+        </Link>
+        <Link href="/cuenta/negocios" className="inline-block text-sm text-primary underline">
+          Mis negocios
+        </Link>
+      </div>
 
       {avatarError && (
         <p className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
@@ -55,19 +57,9 @@ export default async function MiCuentaPage({
           displayName={profile?.display_name ?? ""}
           phone={profile?.phone ?? ""}
           avatarUrl={getAvatarUrl(profile?.avatar_url)}
+          coverUrl={getAvatarUrl(profile?.cover_url)}
           isProfilePublic={profile?.is_profile_public ?? true}
           userId={user.id}
-          businessProfile={
-            businessProfile
-              ? {
-                  businessName: businessProfile.business_name,
-                  contactPhone: businessProfile.contact_phone ?? "",
-                  email: (businessProfile.social_links as { email?: string } | null)?.email ?? "",
-                  address: businessProfile.address_text ?? "",
-                  logoUrl: getAvatarUrl(businessProfile.logo_url),
-                }
-              : null
-          }
         />
       </div>
     </div>

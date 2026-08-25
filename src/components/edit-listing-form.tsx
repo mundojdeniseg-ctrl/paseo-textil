@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Category, Listing } from "@/lib/types/domain";
+import { BusinessProfile, Category, Listing } from "@/lib/types/domain";
 import { getImageUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +43,15 @@ function ExistingPhoto({ listingId, imageId, storagePath }: { listingId: string;
   );
 }
 
-export function EditListingForm({ listing, categories }: { listing: Listing; categories: Category[] }) {
+export function EditListingForm({
+  listing,
+  categories,
+  myBusinesses = [],
+}: {
+  listing: Listing;
+  categories: Category[];
+  myBusinesses?: BusinessProfile[];
+}) {
   const [state, formAction, pending] = useActionState<UpdateListingActionState, FormData>(
     updateListingAction,
     null
@@ -218,6 +226,28 @@ export function EditListingForm({ listing, categories }: { listing: Listing; cat
           </div>
         </div>
       </section>
+
+      {myBusinesses.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Negocio</h2>
+          <div>
+            <Label htmlFor="businessId">Publicado a nombre de</Label>
+            <select
+              id="businessId"
+              name="businessId"
+              defaultValue={listing.businessProfileId ?? "none"}
+              className="flex h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+            >
+              <option value="none">Sin negocio (personal)</option>
+              {myBusinesses.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.businessName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      )}
 
       {state && !state.ok && (
         <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{state.message}</p>

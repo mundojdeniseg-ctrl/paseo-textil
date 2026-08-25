@@ -42,9 +42,11 @@ function mapBusinessProfile(row: any): BusinessProfile | null {
     verificationStatus: row.verification_status,
     city: row.city,
     province: row.province,
+    addressText: row.address_text ?? null,
     contactPhone: row.contact_phone,
     socialLinks: row.social_links ?? {},
     logoUrl: row.logo_url ?? null,
+    isFeatured: row.is_featured ?? false,
   };
 }
 

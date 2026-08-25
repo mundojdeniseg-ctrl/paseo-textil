@@ -26,7 +26,9 @@ export async function publishListingAction(
   const priceMode = String(formData.get("priceMode") ?? "consultar");
   const priceRetailRaw = String(formData.get("priceRetail") ?? "");
   const priceWholesaleRaw = String(formData.get("priceWholesale") ?? "");
+  const isBusiness = formData.get("isBusiness") === "on";
   const businessName = String(formData.get("businessName") ?? "").trim();
+  const businessId = String(formData.get("businessId") ?? "").trim();
   const contactName = String(formData.get("contactName") ?? "").trim();
   const contactPhone = String(formData.get("contactPhone") ?? "").trim();
 
@@ -58,30 +60,44 @@ export async function publishListingAction(
       return { ok: false, message: "Elegí una categoría válida." };
     }
 
+    // Un usuario logueado puede tener varios negocios: si eligió uno
+    // existente del selector, lo reutiliza (validando que sea suyo). Si no,
+    // crea uno nuevo -- tanto para el usuario logueado como para invitados.
     let businessProfileId: string | null = null;
-    if (businessName) {
-      // Upsert por user_id (que es unique): si el usuario logueado ya tiene
-      // un perfil de negocio (creado desde "Mi cuenta"), lo reutiliza en vez
-      // de chocar contra esa restriccion. Como invitado (user_id null) cada
-      // publicacion crea su propio perfil, igual que antes.
+    if (businessId && businessId !== "new" && user) {
+      const { data: existing } = await supabase
+        .from("business_profiles")
+        .select("id")
+        .eq("id", businessId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing) businessProfileId = existing.id;
+    } else if (businessName) {
       const { data: bp, error: bpError } = await supabase
         .from("business_profiles")
-        .upsert(
-          {
-            user_id: user?.id ?? null,
-            business_name: businessName,
-            city,
-            province,
-            contact_phone: contactPhone,
-          },
-          user ? { onConflict: "user_id" } : undefined
-        )
+        .insert({
+          user_id: user?.id ?? null,
+          business_name: businessName,
+          city,
+          province,
+          contact_phone: contactPhone,
+        })
         .select("id")
         .single();
       if (bpError) {
         return { ok: false, message: `No se pudo crear el perfil de negocio: ${bpError.message}` };
       }
       businessProfileId = bp.id;
+    }
+
+    // El usuario tildó "Publico como negocio" pero no se pudo resolver un
+    // negocio (nombre vacío, o el elegido ya no existe/no es suyo): mejor
+    // avisar que publicar en silencio como anuncio personal.
+    if (isBusiness && !businessProfileId) {
+      return {
+        ok: false,
+        message: "No pudimos asociar tu negocio al anuncio. Elegí uno de la lista o escribí un nombre.",
+      };
     }
 
     const { data: listing, error: listingError } = await supabase
@@ -172,9 +188,11 @@ export async function publishListingAction(
             verificationStatus: "sin_verificar",
             city,
             province,
+            addressText: null,
             contactPhone,
             socialLinks: {},
             logoUrl: null,
+            isFeatured: false,
           }
         : null,
     };
@@ -230,18 +248,51 @@ export async function updateListingAction(
   const priceRetail = priceMode === "precio" && priceRetailRaw ? Number(priceRetailRaw) : null;
   const priceOnRequest = priceMode === "consultar";
 
+  const updatePayload: {
+    category_id: string;
+    title: string;
+    description: string;
+    price_wholesale: number | null;
+    price_retail: number | null;
+    price_on_request: boolean;
+    city: string;
+    province: string;
+    business_profile_id?: string | null;
+  } = {
+    category_id: category.id,
+    title,
+    description,
+    price_wholesale: priceWholesale,
+    price_retail: priceRetail,
+    price_on_request: priceOnRequest,
+    city,
+    province,
+  };
+
+  // El selector de negocio solo se renderiza si el usuario tiene alguno; si
+  // el campo no vino en el form, se deja business_profile_id como estaba.
+  const businessIdRaw = formData.get("businessId");
+  if (businessIdRaw !== null) {
+    const businessId = String(businessIdRaw);
+    if (businessId === "none") {
+      updatePayload.business_profile_id = null;
+    } else {
+      const { data: existing } = await supabase
+        .from("business_profiles")
+        .select("id")
+        .eq("id", businessId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!existing) {
+        return { ok: false, message: "Ese negocio no es válido." };
+      }
+      updatePayload.business_profile_id = existing.id;
+    }
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from("listings")
-    .update({
-      category_id: category.id,
-      title,
-      description,
-      price_wholesale: priceWholesale,
-      price_retail: priceRetail,
-      price_on_request: priceOnRequest,
-      city,
-      province,
-    })
+    .update(updatePayload)
     .eq("id", listingId)
     .eq("user_id", user.id)
     .select("id")

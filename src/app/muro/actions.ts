@@ -11,6 +11,7 @@ export type PostActionState = { ok: boolean; message: string } | null;
 // server action pero Storage lo rechazaba en silencio.
 const IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const VIDEO_MIME_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm"]);
+const MAX_FILES = 6;
 
 function mediaTypeFor(file: File): "image" | "video" | null {
   if (IMAGE_MIME_TYPES.has(file.type)) return "image";
@@ -49,7 +50,10 @@ export async function createPostAction(
     return { ok: false, message: `No se pudo publicar: ${postError?.message}` };
   }
 
-  const files = formData.getAll("media").filter((f): f is File => f instanceof File && f.size > 0);
+  const files = formData
+    .getAll("media")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, MAX_FILES);
   let failedCount = 0;
 
   for (let i = 0; i < files.length; i++) {
@@ -68,9 +72,13 @@ export async function createPostAction(
       .upload(storagePath, file, { contentType: file.type, upsert: false });
 
     if (!uploadError) {
-      await supabase
+      const { error: mediaError } = await supabase
         .from("post_media")
         .insert({ post_id: post.id, storage_path: storagePath, media_type: type, position: i });
+      if (mediaError) {
+        failedCount++;
+        await supabase.storage.from("post-media").remove([storagePath]);
+      }
     } else {
       failedCount++;
     }

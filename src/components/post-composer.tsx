@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createPostAction, PostActionState } from "@/app/muro/actions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +46,14 @@ function PostComposerForm({
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Se memoizan las object URLs por archivo (en vez de crear una nueva en
+  // cada render) y se revocan cuando cambian o el composer se desmonta, para
+  // no ir acumulando URLs de blob sin liberar mientras el usuario escribe.
+  const previewUrls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => {
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [previewUrls]);
+
   function syncInputFiles(list: File[]) {
     const dt = new DataTransfer();
     list.forEach((f) => dt.items.add(f));
@@ -84,7 +92,7 @@ function PostComposerForm({
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={URL.createObjectURL(file)} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={previewUrls[i]} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
               )}
               <button
                 type="button"

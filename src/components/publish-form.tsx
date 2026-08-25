@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Category } from "@/lib/types/domain";
+import { BusinessProfile, Category } from "@/lib/types/domain";
 import { cn } from "@/lib/utils";
 
 const MAX_PHOTOS = 8;
 
-export function PublishForm({ categories }: { categories: Category[] }) {
+export function PublishForm({
+  categories,
+  myBusinesses = [],
+}: {
+  categories: Category[];
+  myBusinesses?: BusinessProfile[];
+}) {
   const [state, formAction, pending] = useActionState<PublishActionState, FormData>(
     publishListingAction,
     null
@@ -19,6 +25,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
   const [priceMode, setPriceMode] = useState<"consultar" | "precio">("consultar");
   const [hasWholesale, setHasWholesale] = useState(false);
   const [isBusiness, setIsBusiness] = useState(false);
+  const [businessId, setBusinessId] = useState<string>(myBusinesses[0]?.id ?? "new");
   const [photos, setPhotos] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,6 +237,7 @@ export function PublishForm({ categories }: { categories: Category[] }) {
         <label className="mt-2 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
+            name="isBusiness"
             checked={isBusiness}
             onChange={(e) => setIsBusiness(e.target.checked)}
             className="h-4 w-4 rounded border-border"
@@ -237,13 +245,36 @@ export function PublishForm({ categories }: { categories: Category[] }) {
           Publico como negocio (taller, fábrica, proveedor)
         </label>
         {isBusiness && (
-          <div>
-            <Label htmlFor="businessName">Nombre del negocio</Label>
-            <Input id="businessName" name="businessName" placeholder="Ej: Textiles Riachuelo" />
-            <p className="mt-1 text-xs text-muted-foreground">
-              No pedimos CUIT ni documentación para arrancar — más adelante vas a poder activar la
-              insignia de &quot;negocio verificado&quot; si querés.
-            </p>
+          <div className="flex flex-col gap-3">
+            {myBusinesses.length > 0 && (
+              <div>
+                <Label htmlFor="businessId">Negocio</Label>
+                <select
+                  id="businessId"
+                  name="businessId"
+                  value={businessId}
+                  onChange={(e) => setBusinessId(e.target.value)}
+                  className="flex h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  {myBusinesses.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.businessName}
+                    </option>
+                  ))}
+                  <option value="new">+ Nuevo negocio</option>
+                </select>
+              </div>
+            )}
+            {(myBusinesses.length === 0 || businessId === "new") && (
+              <div>
+                <Label htmlFor="businessName">Nombre del negocio</Label>
+                <Input id="businessName" name="businessName" required placeholder="Ej: Textiles Riachuelo" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No pedimos CUIT ni documentación para arrancar — más adelante vas a poder activar la
+                  insignia de &quot;negocio verificado&quot; si querés.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </section>

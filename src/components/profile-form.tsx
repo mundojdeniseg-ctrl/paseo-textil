@@ -1,18 +1,56 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { updateProfileAction, ProfileActionState } from "@/app/cuenta/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type BusinessProfileData = {
-  businessName: string;
-  contactPhone: string;
-  email: string;
-  address: string;
-  logoUrl: string | null;
-};
+function CoverPicker({ currentUrl }: { currentUrl: string | null }) {
+  const [preview, setPreview] = useState<string | null>(currentUrl);
+  const [removeCover, setRemoveCover] = useState(false);
+
+  return (
+    <div>
+      <label
+        htmlFor="cover"
+        className="flex h-28 w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-muted text-xs text-muted-foreground hover:border-primary"
+      >
+        {preview && !removeCover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="" className="h-full w-full object-cover" />
+        ) : (
+          "+ foto de portada (opcional)"
+        )}
+      </label>
+      <input
+        id="cover"
+        name="cover"
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) setRemoveCover(false);
+          setPreview(file ? URL.createObjectURL(file) : currentUrl);
+        }}
+      />
+      {currentUrl && (
+        <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            name="removeCover"
+            checked={removeCover}
+            onChange={(e) => setRemoveCover(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-border"
+          />
+          Quitar la foto de portada
+        </label>
+      )}
+    </div>
+  );
+}
 
 function ImagePicker({
   id,
@@ -59,22 +97,21 @@ export function ProfileForm({
   displayName,
   phone,
   avatarUrl,
+  coverUrl,
   isProfilePublic,
   userId,
-  businessProfile,
 }: {
   displayName: string;
   phone: string;
   avatarUrl: string | null;
+  coverUrl: string | null;
   isProfilePublic: boolean;
   userId: string;
-  businessProfile: BusinessProfileData | null;
 }) {
   const [state, formAction, pending] = useActionState<ProfileActionState, FormData>(
     updateProfileAction,
     null
   );
-  const [hasBusiness, setHasBusiness] = useState(Boolean(businessProfile));
 
   return (
     <form action={formAction} className="flex flex-col gap-8">
@@ -82,6 +119,10 @@ export function ProfileForm({
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Datos personales
         </h2>
+        <div>
+          <Label>Foto de portada</Label>
+          <CoverPicker currentUrl={coverUrl} />
+        </div>
         <div>
           <Label>Foto de perfil</Label>
           <ImagePicker id="avatar" name="avatar" currentUrl={avatarUrl} emptyLabel="+ foto" />
@@ -112,68 +153,14 @@ export function ProfileForm({
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-          Datos del negocio
+          Tus negocios
         </h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="hasBusiness"
-            checked={hasBusiness}
-            onChange={(e) => setHasBusiness(e.target.checked)}
-            className="h-4 w-4 rounded border-border"
-          />
-          Tengo un negocio (taller, fábrica, proveedor)
-        </label>
-
-        {hasBusiness && (
-          <div className="flex flex-col gap-3">
-            <div>
-              <Label>Logo del negocio</Label>
-              <ImagePicker id="logo" name="logo" currentUrl={businessProfile?.logoUrl ?? null} emptyLabel="+ logo" />
-            </div>
-            <div>
-              <Label htmlFor="businessName">Nombre del negocio</Label>
-              <Input
-                id="businessName"
-                name="businessName"
-                defaultValue={businessProfile?.businessName}
-                required
-                placeholder="Ej: Textiles Riachuelo"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="businessPhone">WhatsApp del negocio</Label>
-                <Input
-                  id="businessPhone"
-                  name="businessPhone"
-                  defaultValue={businessProfile?.contactPhone}
-                  required
-                  placeholder="+54 9 ..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="businessEmail">Mail de contacto</Label>
-                <Input
-                  id="businessEmail"
-                  name="businessEmail"
-                  type="email"
-                  defaultValue={businessProfile?.email}
-                  placeholder="opcional"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="businessAddress">Dirección</Label>
-              <Input
-                id="businessAddress"
-                name="businessAddress"
-                defaultValue={businessProfile?.address}
-                placeholder="opcional"
-              />
-            </div>
-          </div>
-        )}
+        <p className="text-sm text-muted-foreground">
+          Cargá el logo y los datos de tu taller, fábrica o marca. Podés agregar más de uno.
+        </p>
+        <Link href="/cuenta/negocios" className="w-fit text-sm font-semibold text-primary underline">
+          Gestionar mis negocios →
+        </Link>
       </section>
 
       {state && (

@@ -1,18 +1,22 @@
 import Link from "next/link";
 import { Post } from "@/lib/types/domain";
-import { formatRelativeDate, getAvatarUrl, getPostMediaUrl } from "@/lib/format";
+import { formatRelativeDate, getAvatarUrl } from "@/lib/format";
 import { LikeButton } from "@/components/like-button";
 import { CommentsSection } from "@/components/comments-section";
 import { ReportButton } from "@/components/report-button";
+import { PostMediaGrid } from "@/components/post-media-grid";
 
 export function PostCard({
   post,
   path,
   isLoggedIn,
+  compact,
 }: {
   post: Post;
   path: string;
   isLoggedIn: boolean;
+  /** En el perfil publico las fotos van mas chicas; en el muro van grandes. */
+  compact?: boolean;
 }) {
   const avatarUrl = getAvatarUrl(post.authorAvatarUrl);
 
@@ -39,24 +43,7 @@ export function PostCard({
 
       <p className="mt-3 whitespace-pre-line leading-relaxed">{post.body}</p>
 
-      {post.media.length > 0 && (
-        <div className={`mt-3 grid gap-2 ${post.media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-          {post.media.map((m) => {
-            const url = getPostMediaUrl(m.storagePath);
-            if (!url) return null;
-            return (
-              <div key={m.id} className="overflow-hidden rounded-xl bg-muted">
-                {m.mediaType === "video" ? (
-                  <video src={url} controls className="max-h-96 w-full" />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={url} alt="" className="max-h-96 w-full object-cover" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <PostMediaGrid media={post.media} size={compact ? "medium" : "large"} />
 
       <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
         <div className="flex items-center justify-between gap-4">
