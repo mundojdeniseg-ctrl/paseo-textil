@@ -31,57 +31,71 @@ export function MessageThread({
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`thread-${currentUserId}-${otherUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `recipient_id=eq.${currentUserId}`,
-        },
-        (payload) => {
-          const row = payload.new as {
-            id: string;
-            sender_id: string;
-            recipient_id: string;
-            listing_id: string | null;
-            body: string;
-            created_at: string;
-            read_at: string | null;
-          };
-          // El filtro solo acota por destinatario (Realtime no admite dos
-          // condiciones a la vez); esta parte deja pasar solo los mensajes
-          // que son realmente de esta conversacion puntual.
-          if (row.sender_id !== otherUserId) return;
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-          setMessages((prev) =>
-            prev.some((m) => m.id === row.id)
-              ? prev
-              : [
-                  ...prev,
-                  {
-                    id: row.id,
-                    senderId: row.sender_id,
-                    recipientId: row.recipient_id,
-                    listingId: row.listing_id,
-                    body: row.body,
-                    createdAt: row.created_at,
-                    readAt: row.read_at,
-                  },
-                ]
-          );
+    // Ojo: hay que asegurarse de que el cliente de Realtime tenga el token
+    // de sesion ANTES de suscribirse. Si no, la conexion WebSocket queda
+    // autenticada como anonima y las policies de RLS bloquean todo en
+    // silencio (el canal igual queda en estado "SUBSCRIBED", pero nunca
+    // llega ningun evento).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (session) supabase.realtime.setAuth(session.access_token);
 
-          // Ya que la conversacion esta abierta en pantalla, se marca como
-          // leido apenas llega en vez de esperar a la proxima visita.
-          supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("id", row.id).then();
-        }
-      )
-      .subscribe();
+      channel = supabase
+        .channel(`thread-${currentUserId}-${otherUserId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `recipient_id=eq.${currentUserId}`,
+          },
+          (payload) => {
+            const row = payload.new as {
+              id: string;
+              sender_id: string;
+              recipient_id: string;
+              listing_id: string | null;
+              body: string;
+              created_at: string;
+              read_at: string | null;
+            };
+            // El filtro solo acota por destinatario (Realtime no admite dos
+            // condiciones a la vez); esta parte deja pasar solo los mensajes
+            // que son realmente de esta conversacion puntual.
+            if (row.sender_id !== otherUserId) return;
+
+            setMessages((prev) =>
+              prev.some((m) => m.id === row.id)
+                ? prev
+                : [
+                    ...prev,
+                    {
+                      id: row.id,
+                      senderId: row.sender_id,
+                      recipientId: row.recipient_id,
+                      listingId: row.listing_id,
+                      body: row.body,
+                      createdAt: row.created_at,
+                      readAt: row.read_at,
+                    },
+                  ]
+            );
+
+            // Ya que la conversacion esta abierta en pantalla, se marca como
+            // leido apenas llega en vez de esperar a la proxima visita.
+            supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("id", row.id).then();
+          }
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [currentUserId, otherUserId]);
 
