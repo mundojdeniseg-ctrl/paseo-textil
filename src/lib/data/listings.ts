@@ -57,7 +57,7 @@ function mapBusinessProfile(row: any): BusinessProfile | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapListing(row: any): Listing {
+export function mapListing(row: any): Listing {
   return {
     id: row.id,
     userId: row.user_id,
