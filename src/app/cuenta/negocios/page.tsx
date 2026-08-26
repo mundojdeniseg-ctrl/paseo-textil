@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BusinessDeleteButton } from "@/components/business-delete-button";
 
+export const metadata = {
+  title: "Mis negocios — Paseo Textil",
+};
+
 export default async function MisNegociosPage() {
   const supabase = await createClient();
   const {
@@ -41,7 +45,7 @@ export default async function MisNegociosPage() {
               <div key={biz.id} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4">
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoUrl} alt={biz.businessName} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                  <img src={logoUrl} alt={biz.businessName} loading="lazy" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
                 ) : (
                   <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-2xl font-bold text-primary">
                     {biz.businessName.charAt(0).toUpperCase()}

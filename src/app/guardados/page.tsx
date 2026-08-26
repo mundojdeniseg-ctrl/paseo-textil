@@ -63,7 +63,12 @@ export default async function GuardadosPage() {
                   <Link href={`/usuarios/${b.userId}`} className="flex min-w-0 items-center gap-3">
                     {logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logo} alt={b.businessName} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                      <img
+                        src={logo}
+                        alt={b.businessName}
+                        loading="lazy"
+                        className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                      />
                     ) : (
                       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
                         {b.businessName.charAt(0).toUpperCase()}

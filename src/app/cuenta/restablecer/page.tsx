@@ -2,6 +2,10 @@ import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { UpdatePasswordForm } from "@/components/auth-form";
 
+export const metadata = {
+  title: "Restablecer contraseña — Paseo Textil",
+};
+
 export default async function RestablecerPage() {
   let hasSession = false;
   if (isSupabaseConfigured()) {

@@ -26,7 +26,7 @@ export function PostCard({
         <Link href={`/usuarios/${post.userId}`}>
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={post.authorName} className="h-9 w-9 rounded-full object-cover" />
+            <img src={avatarUrl} alt={post.authorName} loading="lazy" className="h-9 w-9 rounded-full object-cover" />
           ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
               {post.authorName.charAt(0).toUpperCase()}

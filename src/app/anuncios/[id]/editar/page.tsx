@@ -4,6 +4,10 @@ import { getListingById, getCategories } from "@/lib/data/listings";
 import { getMyBusinesses } from "@/lib/data/profiles";
 import { EditListingForm } from "@/components/edit-listing-form";
 
+export const metadata = {
+  title: "Editar anuncio — Paseo Textil",
+};
+
 export default async function EditarAnuncioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();

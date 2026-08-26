@@ -305,7 +305,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 <div key={biz.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
                   {bizLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={bizLogo} alt={biz.businessName} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                    <img
+                      src={bizLogo}
+                      alt={biz.businessName}
+                      loading="lazy"
+                      className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    />
                   ) : (
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xl font-bold text-primary">
                       {biz.businessName.charAt(0).toUpperCase()}

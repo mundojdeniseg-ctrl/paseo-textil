@@ -6,6 +6,10 @@ import { signOutAction } from "@/app/cuenta/actions";
 import { Button } from "@/components/ui/button";
 import { getAvatarUrl } from "@/lib/format";
 
+export const metadata = {
+  title: "Mi cuenta — Paseo Textil",
+};
+
 export default async function MiCuentaPage({
   searchParams,
 }: {

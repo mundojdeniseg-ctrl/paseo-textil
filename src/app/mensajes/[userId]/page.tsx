@@ -6,6 +6,10 @@ import { getAvatarUrl } from "@/lib/format";
 import { MessageForm } from "@/components/message-form";
 import { MessageThread } from "@/components/message-thread";
 
+export const metadata = {
+  title: "Mensajes — Paseo Textil",
+};
+
 export default async function ThreadPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const supabase = await createClient();

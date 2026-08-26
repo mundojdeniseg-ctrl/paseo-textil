@@ -146,7 +146,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
                     {image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={image} alt="" className="h-full w-full object-cover" />
+                      <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
                     ) : (
                       <span className="text-xs font-semibold text-muted-foreground">
                         {listing.category?.name?.charAt(0) ?? "?"}

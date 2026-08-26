@@ -1,5 +1,9 @@
 import { RequestPasswordResetForm } from "@/components/auth-form";
 
+export const metadata = {
+  title: "Recuperar contraseña — Paseo Textil",
+};
+
 export default function OlvidePasswordPage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-16">

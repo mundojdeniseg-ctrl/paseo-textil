@@ -1,5 +1,9 @@
 import { SignUpForm } from "@/components/auth-form";
 
+export const metadata = {
+  title: "Crear cuenta — Paseo Textil",
+};
+
 export default function RegistrarsePage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-16">

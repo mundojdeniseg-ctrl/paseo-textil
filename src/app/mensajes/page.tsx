@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getConversations } from "@/lib/data/messages";
 import { getAvatarUrl, formatRelativeDate } from "@/lib/format";
 
+export const metadata = {
+  title: "Mensajes — Paseo Textil",
+};
+
 export default async function MensajesPage() {
   const supabase = await createClient();
   const {
@@ -34,7 +38,7 @@ export default async function MensajesPage() {
               >
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                  <img src={avatarUrl} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-full object-cover" />
                 ) : (
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
                     {thread.otherUserName.charAt(0).toUpperCase()}

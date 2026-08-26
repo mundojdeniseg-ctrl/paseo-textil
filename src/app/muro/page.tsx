@@ -5,6 +5,11 @@ import { PostComposer } from "@/components/post-composer";
 import { PostCard } from "@/components/post-card";
 import { Button } from "@/components/ui/button";
 
+export const metadata = {
+  title: "Muro — Paseo Textil",
+  description: "El muro social del rubro textil argentino: novedades, fotos y publicaciones de talleres y proveedores.",
+};
+
 export default async function MuroPage() {
   const posts = await getPosts();
 

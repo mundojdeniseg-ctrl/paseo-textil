@@ -118,7 +118,7 @@ function MediaLightbox({
           <video src={url ?? undefined} controls autoPlay className="max-h-[90vh] max-w-[90vw]" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url ?? undefined} alt="" className="max-h-[90vh] max-w-[90vw] object-contain" />
+          <img src={url ?? undefined} alt="" loading="lazy" className="max-h-[90vh] max-w-[90vw] object-contain" />
         )}
       </div>
 

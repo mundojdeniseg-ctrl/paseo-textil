@@ -3,6 +3,11 @@ import { getCategories } from "@/lib/data/listings";
 import { getMyBusinesses } from "@/lib/data/profiles";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
+export const metadata = {
+  title: "Publicar anuncio gratis — Paseo Textil",
+  description: "Publicá tu anuncio textil gratis, sin cuenta obligatoria: telas, maquinaria, moldería, confección y más.",
+};
+
 export default async function PublicarPage() {
   const categories = await getCategories();
 

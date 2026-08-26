@@ -6,6 +6,10 @@ import { getImageUrl, formatPrice, formatRelativeDate } from "@/lib/format";
 import { ListingStatusActions } from "@/components/listing-status-actions";
 import { Button } from "@/components/ui/button";
 
+export const metadata = {
+  title: "Mis anuncios — Paseo Textil",
+};
+
 const STATUS_LABEL: Record<string, string> = {
   activo: "Activo",
   pausado: "Pausado",
@@ -54,7 +58,7 @@ export default async function MisAnunciosPage() {
                 <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                       {listing.category?.name}

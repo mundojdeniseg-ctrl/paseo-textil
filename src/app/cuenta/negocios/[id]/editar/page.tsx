@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getBusinessById } from "@/lib/data/profiles";
 import { BusinessForm } from "@/components/business-form";
 
+export const metadata = {
+  title: "Editar negocio — Paseo Textil",
+};
+
 export default async function EditarNegocioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();

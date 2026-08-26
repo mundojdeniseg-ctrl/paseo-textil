@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BusinessForm } from "@/components/business-form";
 
+export const metadata = {
+  title: "Nuevo negocio — Paseo Textil",
+};
+
 export default async function NuevoNegocioPage() {
   const supabase = await createClient();
   const {

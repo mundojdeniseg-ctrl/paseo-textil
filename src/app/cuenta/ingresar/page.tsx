@@ -1,5 +1,9 @@
 import { SignInForm } from "@/components/auth-form";
 
+export const metadata = {
+  title: "Ingresar — Paseo Textil",
+};
+
 export default function IngresarPage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-16">

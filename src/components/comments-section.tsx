@@ -41,7 +41,7 @@ export function CommentsSection({
               <div key={comment.id} className="flex items-start gap-2 text-sm">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                  <img src={avatarUrl} alt="" loading="lazy" className="h-6 w-6 shrink-0 rounded-full object-cover" />
                 ) : (
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {comment.authorName.charAt(0).toUpperCase()}
