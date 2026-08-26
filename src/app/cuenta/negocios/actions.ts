@@ -22,6 +22,7 @@ async function uploadLogo(
 }
 
 function readForm(formData: FormData) {
+  const acceptsOwnPatternsRaw = String(formData.get("acceptsOwnPatterns") ?? "no_especifica");
   return {
     businessName: String(formData.get("businessName") ?? "").trim(),
     businessPhone: String(formData.get("businessPhone") ?? "").trim(),
@@ -29,6 +30,12 @@ function readForm(formData: FormData) {
     businessAddress: String(formData.get("businessAddress") ?? "").trim(),
     isFeatured: formData.get("isFeatured") === "on",
     logo: formData.get("logo"),
+    hoursText: String(formData.get("hoursText") ?? "").trim(),
+    minProduction: String(formData.get("minProduction") ?? "").trim(),
+    leadTime: String(formData.get("leadTime") ?? "").trim(),
+    fabricTypes: String(formData.get("fabricTypes") ?? "").trim(),
+    acceptsOwnPatterns: acceptsOwnPatternsRaw === "no_especifica" ? null : acceptsOwnPatternsRaw === "si",
+    acceptsOrders: formData.get("acceptsOrders") === "on",
   };
 }
 
@@ -58,7 +65,20 @@ export async function createBusinessAction(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, message: "Tu sesión expiró, volvé a ingresar." };
 
-  const { businessName, businessPhone, businessEmail, businessAddress, isFeatured, logo } = readForm(formData);
+  const {
+    businessName,
+    businessPhone,
+    businessEmail,
+    businessAddress,
+    isFeatured,
+    logo,
+    hoursText,
+    minProduction,
+    leadTime,
+    fabricTypes,
+    acceptsOwnPatterns,
+    acceptsOrders,
+  } = readForm(formData);
   if (!businessName || !businessPhone) {
     return { ok: false, message: "El nombre y el WhatsApp del negocio son obligatorios." };
   }
@@ -72,6 +92,12 @@ export async function createBusinessAction(
       social_links: businessEmail ? { email: businessEmail } : {},
       address_text: businessAddress || null,
       is_featured: isFeatured,
+      hours_text: hoursText || null,
+      min_production: minProduction || null,
+      lead_time: leadTime || null,
+      fabric_types: fabricTypes || null,
+      accepts_own_patterns: acceptsOwnPatterns,
+      accepts_orders: acceptsOrders,
     })
     .select("id")
     .single();
@@ -108,7 +134,20 @@ export async function updateBusinessAction(
   if (!user) return { ok: false, message: "Tu sesión expiró, volvé a ingresar." };
 
   const businessId = String(formData.get("businessId") ?? "");
-  const { businessName, businessPhone, businessEmail, businessAddress, isFeatured, logo } = readForm(formData);
+  const {
+    businessName,
+    businessPhone,
+    businessEmail,
+    businessAddress,
+    isFeatured,
+    logo,
+    hoursText,
+    minProduction,
+    leadTime,
+    fabricTypes,
+    acceptsOwnPatterns,
+    acceptsOrders,
+  } = readForm(formData);
   if (!businessId || !businessName || !businessPhone) {
     return { ok: false, message: "El nombre y el WhatsApp del negocio son obligatorios." };
   }
@@ -120,12 +159,26 @@ export async function updateBusinessAction(
     address_text: string | null;
     is_featured: boolean;
     logo_url?: string;
+    hours_text: string | null;
+    min_production: string | null;
+    lead_time: string | null;
+    fabric_types: string | null;
+    accepts_own_patterns: boolean | null;
+    accepts_orders: boolean;
+    updated_at: string;
   } = {
     business_name: businessName,
     contact_phone: businessPhone,
     social_links: businessEmail ? { email: businessEmail } : {},
     address_text: businessAddress || null,
     is_featured: isFeatured,
+    hours_text: hoursText || null,
+    min_production: minProduction || null,
+    lead_time: leadTime || null,
+    fabric_types: fabricTypes || null,
+    accepts_own_patterns: acceptsOwnPatterns,
+    accepts_orders: acceptsOrders,
+    updated_at: new Date().toISOString(),
   };
 
   if (logo instanceof File && logo.size > 0) {

@@ -50,8 +50,14 @@ export default function TerminosPage() {
             Paseo Textil es un punto de encuentro: publicás, cotizás y te contactás, pero la compra,
             venta o acuerdo de servicio ocurre directamente entre las partes, fuera de la
             plataforma. No somos parte de esas transacciones, no procesamos pagos ni garantizamos
-            el resultado de ningún acuerdo. Usá el sentido común al tratar con desconocidos: pedí
-            referencias, verificá antes de pagar o entregar mercadería.
+            el resultado de ningún acuerdo.
+          </p>
+          <p className="mt-2 rounded-xl bg-muted/60 p-3">
+            <strong>Aviso importante:</strong> ni la insignia de &quot;negocio verificado&quot; ni las
+            reseñas de otros usuarios son una garantía de que un proveedor vaya a cumplir. Son señales
+            que ayudan a decidir, no una certificación. Antes de pagar una seña o el total de un
+            pedido, te recomendamos pedir referencias, ver trabajos anteriores y, si podés, empezar con
+            un pedido chico antes de uno grande.
           </p>
         </section>
 

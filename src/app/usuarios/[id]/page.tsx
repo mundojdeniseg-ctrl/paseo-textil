@@ -1,17 +1,54 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPublicProfile } from "@/lib/data/profiles";
+import { getPublicProfile, getSimilarBusinesses } from "@/lib/data/profiles";
 import { getPostsByUser } from "@/lib/data/posts";
 import { getListingsByUser } from "@/lib/data/listings";
+import { getReviewsForBusiness, getReviewStatsForBusiness, getMyReviewForBusiness } from "@/lib/data/reviews";
+import { getSavedIds } from "@/lib/data/favorites";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { getAvatarUrl } from "@/lib/format";
+import { getAvatarUrl, formatRelativeDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PostCard } from "@/components/post-card";
 import { ListingCard } from "@/components/listing-card";
+import { StarRatingDisplay } from "@/components/star-rating";
+import { ReviewForm } from "@/components/review-form";
+import { ReviewsList } from "@/components/reviews-list";
+import { SimilarBusinesses } from "@/components/similar-businesses";
+import { BusinessActionsBar } from "@/components/business-actions-bar";
+import { SaveButton } from "@/components/save-button";
+import { localBusinessJsonLd, jsonLdScript } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const profile = await getPublicProfile(id);
+  if (!profile) return { title: "Perfil no encontrado — Paseo Textil" };
+
+  const business = profile.businessProfiles[0] ?? null;
+  const name = business?.businessName ?? profile.displayName;
+  const location = business ? [business.city, business.province].filter(Boolean).join(", ") : null;
+  const description = business
+    ? business.description || `${name}${location ? ` — ${location}` : ""}. Perfil en Paseo Textil.`
+    : `Perfil de ${name} en Paseo Textil.`;
+
+  return {
+    title: `${name} — Paseo Textil`,
+    description,
+    openGraph: { title: name, description, type: "profile" },
+  };
+}
 
 function waLink(phone: string) {
   return `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
+}
+
+function SpecItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium">{value}</p>
+    </div>
+  );
 }
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,9 +85,31 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const [posts, listings] = canViewContent
     ? await Promise.all([getPostsByUser(profile.id), getListingsByUser(profile.id)])
     : [[], []];
+  const savedListingIds = viewerId ? await getSavedIds(viewerId, "listing") : new Set<string>();
+
+  // Reseñas, negocios similares y guardado: van atadas al negocio, no al
+  // muro/perfil privado, asi que se muestran aunque el perfil sea privado.
+  const [reviewStats, reviews, myReview, similarBusinesses, businessSavedIds] = business
+    ? await Promise.all([
+        getReviewStatsForBusiness(business.id),
+        getReviewsForBusiness(business.id),
+        viewerId ? getMyReviewForBusiness(business.id, viewerId) : Promise.resolve(null),
+        getSimilarBusinesses(business.id),
+        viewerId ? getSavedIds(viewerId, "business") : Promise.resolve(new Set<string>()),
+      ])
+    : [null, [], null, [], new Set<string>()];
+  const canReview = business && isLoggedIn && !isOwnProfile;
+  const businessSaved = business ? businessSavedIds.has(business.id) : false;
+  const lastUpdatedLabel = business?.updatedAt ? formatRelativeDate(business.updatedAt) : null;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      {business && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdScript(localBusinessJsonLd(business, reviewStats))}
+        />
+      )}
       {/* Header estilo perfil de red social: fondo destacado, avatar grande,
           datos de contacto visibles para cualquiera sin necesidad de cuenta. */}
       <div className="overflow-hidden rounded-3xl border border-border bg-card">
@@ -90,11 +149,20 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <div className="sm:pb-1">
               {business ? (
                 <>
-                  <div className="flex items-center justify-center gap-2 sm:justify-start">
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                     <h1 className="text-2xl font-black tracking-tight">{business.businessName}</h1>
                     {business.verificationStatus === "verificado" && <Badge>Negocio verificado</Badge>}
+                    {business.acceptsOrders === false && (
+                      <Badge className="bg-muted text-muted-foreground">No toma pedidos por ahora</Badge>
+                    )}
                   </div>
-                  {location && <p className="mt-0.5 text-sm text-muted-foreground">{location}</p>}
+                  <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground sm:justify-start">
+                    {reviewStats && reviewStats.count > 0 && (
+                      <StarRatingDisplay average={reviewStats.average} count={reviewStats.count} size="md" />
+                    )}
+                    {location && <span>{location}</span>}
+                    {lastUpdatedLabel && <span>· actualizado {lastUpdatedLabel}</span>}
+                  </div>
                   <div className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -115,9 +183,19 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               )}
             </div>
 
-            {!isOwnProfile && (
-              <div className="flex gap-2 sm:ml-auto sm:pb-1">
-                {isLoggedIn ? (
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end sm:pb-1">
+              {business && <BusinessActionsBar businessId={business.id} businessName={business.businessName} />}
+              {business && !isOwnProfile && (
+                <SaveButton
+                  targetType="business"
+                  targetId={business.id}
+                  initialSaved={businessSaved}
+                  isLoggedIn={isLoggedIn}
+                  variant="full"
+                />
+              )}
+              {!isOwnProfile &&
+                (isLoggedIn ? (
                   <Button
                     render={<Link href={`/mensajes/${profile.id}`} />}
                     nativeButton={false}
@@ -135,9 +213,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   >
                     Iniciá sesión para escribirle
                   </Button>
-                )}
-              </div>
-            )}
+                ))}
+            </div>
           </div>
 
           {/* Contacto directo: siempre visible, no hace falta cuenta ni
@@ -174,6 +251,23 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               )}
             </div>
           )}
+
+          {/* Ficha ampliada: horarios y specs de produccion, todo opcional. */}
+          {business &&
+            (business.hoursText || business.minProduction || business.leadTime || business.fabricTypes || business.acceptsOwnPatterns != null) && (
+              <div className="mt-5 grid grid-cols-1 gap-3 border-t border-border pt-5 sm:grid-cols-2">
+                {business.hoursText && <SpecItem label="Horario de atención" value={business.hoursText} />}
+                {business.minProduction && <SpecItem label="Mínimo de producción" value={business.minProduction} />}
+                {business.leadTime && <SpecItem label="Tiempo de entrega estimado" value={business.leadTime} />}
+                {business.fabricTypes && <SpecItem label="Tipos de tela" value={business.fabricTypes} />}
+                {business.acceptsOwnPatterns != null && (
+                  <SpecItem
+                    label="Moldes propios"
+                    value={business.acceptsOwnPatterns ? "Acepta moldes del cliente" : "No acepta moldes del cliente"}
+                  />
+                )}
+              </div>
+            )}
         </div>
       </div>
 
@@ -242,7 +336,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : (
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    isLoggedIn={isLoggedIn}
+                    saved={savedListingIds.has(listing.id)}
+                  />
                 ))}
               </div>
             )}
@@ -270,6 +369,30 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </section>
         </>
       )}
+
+      {business && (
+        <section className="mt-10">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            Reseñas · {reviewStats?.count ?? 0}
+          </h2>
+          <div className="mt-4 flex flex-col gap-4">
+            {canReview && (
+              <ReviewForm businessProfileId={business.id} profilePath={`/usuarios/${profile.id}`} myReview={myReview} />
+            )}
+            {!isLoggedIn && (
+              <p className="text-sm text-muted-foreground">
+                <Link href="/cuenta/ingresar" className="text-primary underline">
+                  Iniciá sesión
+                </Link>{" "}
+                para dejar tu reseña sobre este negocio.
+              </p>
+            )}
+            <ReviewsList reviews={reviews} />
+          </div>
+        </section>
+      )}
+
+      {business && <SimilarBusinesses businesses={similarBusinesses} />}
     </div>
   );
 }

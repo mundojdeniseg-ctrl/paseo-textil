@@ -91,6 +91,72 @@ export function BusinessForm({ business }: { business?: BusinessProfile }) {
         />
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="hoursText">Horario de atención</Label>
+          <Input
+            id="hoursText"
+            name="hoursText"
+            defaultValue={business?.hoursText ?? ""}
+            placeholder="Ej: Lun a Vie 9 a 18hs"
+          />
+        </div>
+        <div>
+          <Label htmlFor="leadTime">Tiempo de entrega</Label>
+          <Input
+            id="leadTime"
+            name="leadTime"
+            defaultValue={business?.leadTime ?? ""}
+            placeholder="Ej: 7 a 10 días"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="minProduction">Mínimo de producción</Label>
+          <Input
+            id="minProduction"
+            name="minProduction"
+            defaultValue={business?.minProduction ?? ""}
+            placeholder="Ej: desde 40 prendas"
+          />
+        </div>
+        <div>
+          <Label htmlFor="fabricTypes">Tipos de tela que trabaja</Label>
+          <Input
+            id="fabricTypes"
+            name="fabricTypes"
+            defaultValue={business?.fabricTypes ?? ""}
+            placeholder="Ej: algodón, gabardina, jersey"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="acceptsOwnPatterns">¿Acepta moldes propios del cliente?</Label>
+        <select
+          id="acceptsOwnPatterns"
+          name="acceptsOwnPatterns"
+          defaultValue={business?.acceptsOwnPatterns == null ? "no_especifica" : business.acceptsOwnPatterns ? "si" : "no"}
+          className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+        >
+          <option value="no_especifica">No especifica</option>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="acceptsOrders"
+          defaultChecked={business?.acceptsOrders ?? true}
+          className="h-4 w-4 rounded border-border"
+        />
+        Estoy tomando pedidos/trabajos nuevos ahora
+      </label>
+
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"

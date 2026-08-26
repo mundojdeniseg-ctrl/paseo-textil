@@ -2,15 +2,21 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import * as mock from "@/lib/data/listings-mock";
 import { BusinessProfile, Category, Listing, ListingImage } from "@/lib/types/domain";
+import { getReviewStatsMap } from "@/lib/data/reviews";
 
 // Capa de datos: si hay credenciales reales de Supabase configuradas (.env.local),
 // consulta la base real. Si no, sigue funcionando con datos de prueba en memoria
 // (lib/data/listings-mock.ts) para que el sitio nunca se rompa en desarrollo.
 
+export type ListingSort = "recientes" | "destacados" | "mejor_puntuados";
+
 export type ListingFilters = {
   categorySlug?: string;
   query?: string;
   province?: string;
+  city?: string;
+  verifiedOnly?: boolean;
+  sort?: ListingSort;
 };
 
 function categoryName(name: unknown): string {
@@ -107,6 +113,7 @@ export async function getListings(filters: ListingFilters = {}): Promise<Listing
     if (cat) query = query.eq("category_id", cat.id);
   }
   if (filters.province) query = query.eq("province", filters.province);
+  if (filters.city) query = query.ilike("city", `%${filters.city}%`);
   if (filters.query) query = query.textSearch("search_vector", filters.query, { type: "websearch" });
 
   const { data, error } = await query;
@@ -114,7 +121,44 @@ export async function getListings(filters: ListingFilters = {}): Promise<Listing
     console.error("getListings error:", error.message);
     return [];
   }
-  return (data ?? []).map(mapListing);
+
+  let listings = (data ?? []).map(mapListing);
+
+  // "Solo verificados" se filtra en JS (no via el join embebido de Supabase,
+  // que con relaciones opcionales puede comportarse como inner join).
+  if (filters.verifiedOnly) {
+    listings = listings.filter((l) => l.businessProfile?.verificationStatus === "verificado");
+  }
+
+  // Reseñas: se calculan aparte (no vienen del join) y se pegan al
+  // businessProfile de cada anuncio, para mostrar estrellas en la card y
+  // habilitar el orden "mejor puntuados".
+  const businessIds = Array.from(
+    new Set(listings.map((l) => l.businessProfile?.id).filter((id): id is string => Boolean(id)))
+  );
+  if (businessIds.length > 0) {
+    const stats = await getReviewStatsMap(businessIds);
+    listings = listings.map((l) =>
+      l.businessProfile
+        ? {
+            ...l,
+            businessProfile: {
+              ...l.businessProfile,
+              reviewsAverage: stats[l.businessProfile.id]?.average ?? null,
+              reviewsCount: stats[l.businessProfile.id]?.count ?? 0,
+            },
+          }
+        : l
+    );
+  }
+
+  if (filters.sort === "destacados") {
+    listings.sort((a, b) => Number(b.businessProfile?.isFeatured ?? false) - Number(a.businessProfile?.isFeatured ?? false));
+  } else if (filters.sort === "mejor_puntuados") {
+    listings.sort((a, b) => (b.businessProfile?.reviewsAverage ?? 0) - (a.businessProfile?.reviewsAverage ?? 0));
+  }
+
+  return listings;
 }
 
 export async function getListingById(id: string): Promise<Listing | null> {

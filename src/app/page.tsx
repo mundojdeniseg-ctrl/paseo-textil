@@ -2,10 +2,24 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ListingCard } from "@/components/listing-card";
 import { getCategories, getListings } from "@/lib/data/listings";
+import { getPlatformStats } from "@/lib/data/stats";
+import { getSavedIds } from "@/lib/data/favorites";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  const [listings, categories] = await Promise.all([getListings(), getCategories()]);
+  const [listings, categories, stats] = await Promise.all([getListings(), getCategories(), getPlatformStats()]);
   const recent = listings.slice(0, 6);
+
+  let isLoggedIn = false;
+  let savedIds = new Set<string>();
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isLoggedIn = Boolean(user);
+    if (user) savedIds = await getSavedIds(user.id, "listing");
+  }
 
   return (
     <div className="flex flex-col">
@@ -96,10 +110,25 @@ export default async function HomePage() {
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {recent.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} isLoggedIn={isLoggedIn} saved={savedIds.has(listing.id)} />
           ))}
         </div>
       </section>
+
+      {/* Numeros de escala: prueba social inmediata, se muestran solo si hay
+          algo real que mostrar (no "0 negocios · 0 reseñas" apenas arranca). */}
+      {(stats.businessesCount > 0 || stats.reviewsCount > 0) && (
+        <section className="border-t border-border/70 bg-secondary/30">
+          <div className="mx-auto flex max-w-6xl flex-wrap gap-x-12 gap-y-4 px-4 py-10">
+            <Stat value={String(stats.businessesCount)} label="negocios en Paseo Textil" />
+            <Stat value={String(stats.reviewsCount)} label="reseñas de clientes reales" />
+            <Stat value={String(categories.length)} label="categorías" />
+            {stats.newBusinessesThisWeek > 0 && (
+              <Stat value={String(stats.newBusinessesThisWeek)} label="negocios nuevos esta semana" />
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

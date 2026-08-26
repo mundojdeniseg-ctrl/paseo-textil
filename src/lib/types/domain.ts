@@ -21,7 +21,31 @@ export type BusinessProfile = {
   socialLinks: Record<string, string>;
   logoUrl: string | null;
   isFeatured: boolean;
+  // Campos opcionales: ausentes en datos de prueba/mock, siempre presentes
+  // cuando vienen de Supabase real (ver mapBusinessProfileRow).
+  updatedAt?: string;
+  hoursText?: string | null;
+  minProduction?: string | null;
+  leadTime?: string | null;
+  fabricTypes?: string | null;
+  acceptsOwnPatterns?: boolean | null;
+  acceptsOrders?: boolean;
+  reviewsAverage?: number | null;
+  reviewsCount?: number;
 };
+
+export type BusinessReview = {
+  id: string;
+  businessProfileId: string;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerAvatarUrl: string | null;
+  rating: number;
+  body: string | null;
+  createdAt: string;
+};
+
+export type SavedItemType = "listing" | "business";
 
 export type ListingImage = {
   id: string;

@@ -16,6 +16,13 @@ export function mapBusinessProfileRow(row: any): BusinessProfile {
     socialLinks: row.social_links ?? {},
     logoUrl: row.logo_url,
     isFeatured: row.is_featured ?? false,
+    updatedAt: row.updated_at ?? undefined,
+    hoursText: row.hours_text ?? null,
+    minProduction: row.min_production ?? null,
+    leadTime: row.lead_time ?? null,
+    fabricTypes: row.fabric_types ?? null,
+    acceptsOwnPatterns: row.accepts_own_patterns ?? null,
+    acceptsOrders: row.accepts_orders ?? true,
   };
 }
 
@@ -75,4 +82,59 @@ export async function getBusinessById(id: string): Promise<BusinessProfile | nul
   const { data, error } = await supabase.from("business_profiles").select("*").eq("id", id).maybeSingle();
   if (error || !data) return null;
   return mapBusinessProfileRow(data);
+}
+
+// "Negocios similares": primero busca otros negocios con anuncios activos en
+// las mismas categorias que el negocio dado; si no encuentra nada (negocio
+// sin anuncios, o categoria sin mas oferta), cae a otros negocios de la
+// misma provincia. Nunca rompe si no hay datos -- devuelve lista vacia.
+export async function getSimilarBusinesses(businessId: string, limit = 4): Promise<BusinessProfile[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data: self } = await supabase
+    .from("business_profiles")
+    .select("id, province")
+    .eq("id", businessId)
+    .maybeSingle();
+  if (!self) return [];
+
+  const { data: ownListings } = await supabase
+    .from("listings")
+    .select("category_id")
+    .eq("business_profile_id", businessId)
+    .eq("status", "activo");
+  const categoryIds = Array.from(new Set((ownListings ?? []).map((l) => l.category_id).filter(Boolean)));
+
+  let candidateIds: string[] = [];
+  if (categoryIds.length > 0) {
+    const { data: peers } = await supabase
+      .from("listings")
+      .select("business_profile_id")
+      .in("category_id", categoryIds)
+      .eq("status", "activo")
+      .not("business_profile_id", "is", null)
+      .neq("business_profile_id", businessId);
+    candidateIds = Array.from(new Set((peers ?? []).map((p) => p.business_profile_id as string)));
+  }
+
+  let query = supabase.from("business_profiles").select("*").neq("id", businessId);
+  if (candidateIds.length > 0) {
+    query = query.in("id", candidateIds);
+  } else if (self.province) {
+    query = query.eq("province", self.province);
+  } else {
+    return [];
+  }
+
+  const { data, error } = await query
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getSimilarBusinesses error:", error.message);
+    return [];
+  }
+  return (data ?? []).map(mapBusinessProfileRow);
 }

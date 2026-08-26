@@ -18,6 +18,12 @@ export function SiteFooter() {
           <Link href="/publicar" className="hover:text-foreground transition-colors">
             Publicar anuncio
           </Link>
+          <Link href="/blog" className="hover:text-foreground transition-colors">
+            Blog
+          </Link>
+          <Link href="/ayuda" className="hover:text-foreground transition-colors">
+            Centro de ayuda
+          </Link>
           <Link href="/legales/terminos" className="hover:text-foreground transition-colors">
             Términos y condiciones
           </Link>

@@ -5,9 +5,35 @@ import { Button } from "@/components/ui/button";
 import { QuoteForm } from "@/components/quote-form";
 import { ListingGallery } from "@/components/listing-gallery";
 import { ReportButton } from "@/components/report-button";
+import { SaveButton } from "@/components/save-button";
 import { getListingById } from "@/lib/data/listings";
+import { getSavedIds } from "@/lib/data/favorites";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { formatPrice, formatRelativeDate, getAvatarUrl } from "@/lib/format";
+import { formatPrice, formatRelativeDate, getAvatarUrl, getImageUrl } from "@/lib/format";
+import { productJsonLd, jsonLdScript } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const listing = await getListingById(id);
+  if (!listing) return { title: "Anuncio no encontrado — Paseo Textil" };
+
+  const location = [listing.city, listing.province].filter(Boolean).join(", ");
+  const description = listing.description
+    ? listing.description.slice(0, 155)
+    : `${listing.title} en ${location || "Argentina"} — publicado en Paseo Textil.`;
+  const imageUrl = listing.images[0] ? getImageUrl(listing.images[0].storagePath) : undefined;
+
+  return {
+    title: `${listing.title} — Paseo Textil`,
+    description,
+    openGraph: {
+      title: listing.title,
+      description,
+      type: "website",
+      ...(imageUrl ? { images: [{ url: imageUrl }] } : {}),
+    },
+  };
+}
 
 export default async function ListingDetailPage({
   params,
@@ -20,6 +46,7 @@ export default async function ListingDetailPage({
 
   let isOwner = false;
   let isLoggedIn = false;
+  let saved = false;
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const {
@@ -27,12 +54,14 @@ export default async function ListingDetailPage({
     } = await supabase.auth.getUser();
     isLoggedIn = Boolean(user);
     isOwner = Boolean(user && listing.userId === user.id);
+    if (user) saved = (await getSavedIds(user.id, "listing")).has(listing.id);
   }
 
   const attributeEntries = Object.entries(listing.attributes);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(productJsonLd(listing))} />
       <Link href="/anuncios" className="text-sm text-muted-foreground hover:text-foreground">
         ← Volver a anuncios
       </Link>
@@ -47,10 +76,13 @@ export default async function ListingDetailPage({
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
             {listing.title}
           </h1>
-          <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span>
               {listing.city}, {listing.province} · publicado {formatRelativeDate(listing.createdAt)}
             </span>
+            {!isOwner && (
+              <SaveButton targetType="listing" targetId={listing.id} initialSaved={saved} isLoggedIn={isLoggedIn} variant="full" />
+            )}
             {isOwner ? (
               <Link href={`/anuncios/${listing.id}/editar`} className="text-primary underline">
                 Editar

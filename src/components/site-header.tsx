@@ -6,6 +6,7 @@ import { getUnreadMessageCount } from "@/lib/data/messages";
 
 export async function SiteHeader() {
   let isLoggedIn = false;
+  let isAdmin = false;
   let avatarUrl: string | null = null;
   let unreadCount = 0;
   if (isSupabaseConfigured()) {
@@ -16,11 +17,12 @@ export async function SiteHeader() {
     isLoggedIn = Boolean(user);
     if (user) {
       const [{ data: profile }, unread] = await Promise.all([
-        supabase.from("users").select("avatar_url").eq("id", user.id).maybeSingle(),
+        supabase.from("users").select("avatar_url, role").eq("id", user.id).maybeSingle(),
         getUnreadMessageCount(),
       ]);
       avatarUrl = getAvatarUrl(profile?.avatar_url);
       unreadCount = unread;
+      isAdmin = profile?.role === "admin";
     }
   }
 
@@ -51,6 +53,9 @@ export async function SiteHeader() {
               <Link href="/mis-anuncios" className="hover:text-foreground transition-colors">
                 mis anuncios
               </Link>
+              <Link href="/guardados" className="hover:text-foreground transition-colors">
+                guardados
+              </Link>
               <Link href="/mensajes" className="relative hover:text-foreground transition-colors">
                 mensajes
                 {unreadCount > 0 && (
@@ -60,6 +65,11 @@ export async function SiteHeader() {
                 )}
               </Link>
             </>
+          )}
+          {isAdmin && (
+            <Link href="/admin" className="hover:text-foreground transition-colors">
+              admin
+            </Link>
           )}
         </nav>
 
