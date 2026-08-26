@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ListingCard } from "@/components/listing-card";
+import { NecesidadForm } from "@/components/necesidad-form";
 import { getCategories, getListings } from "@/lib/data/listings";
 import { getPlatformStats } from "@/lib/data/stats";
 import { getSavedIds } from "@/lib/data/favorites";
@@ -129,6 +130,21 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Contanos que necesitas: formulario general, independiente del de
+          cotizacion de cada anuncio. Muestra hasta 5 resultados al toque. */}
+      <section className="border-t border-border/70">
+        <div className="mx-auto max-w-6xl px-4 py-14">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">¿No encontrás lo que buscás?</p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Contanos qué necesitás</h2>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Describilo en pocas palabras y te mostramos al toque los anuncios que más se acercan.
+          </p>
+          <div className="mt-6 max-w-2xl">
+            <NecesidadForm categories={categories} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
