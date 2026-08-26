@@ -35,7 +35,7 @@ export function CompareTray() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card px-4 py-2.5 shadow-lg">
+    <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card px-4 py-2.5 shadow-lg md:bottom-4">
       <span className="text-sm font-semibold">
         Comparar {ids.length} negocio{ids.length > 1 ? "s" : ""}
       </span>

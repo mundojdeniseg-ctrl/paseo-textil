@@ -37,12 +37,21 @@ export default async function MiCuentaPage({
         </form>
       </div>
       <p className="mt-2 text-muted-foreground">{user.email}</p>
-      <div className="mt-2 flex gap-4">
+      <div className="mt-2 flex flex-wrap gap-4">
         <Link href="/mis-anuncios" className="inline-block text-sm text-primary underline">
           Ver mis anuncios
         </Link>
         <Link href="/cuenta/negocios" className="inline-block text-sm text-primary underline">
           Mis negocios
+        </Link>
+        <Link href="/mensajes" className="inline-block text-sm text-primary underline">
+          Mensajes
+        </Link>
+        <Link href="/guardados" className="inline-block text-sm text-primary underline">
+          Guardados
+        </Link>
+        <Link href="/muro" className="inline-block text-sm text-primary underline">
+          Muro
         </Link>
       </div>
 
