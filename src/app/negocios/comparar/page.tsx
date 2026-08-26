@@ -93,16 +93,18 @@ export default async function CompararNegociosPage({
         {businesses.length} negocio{businesses.length > 1 ? "s" : ""} lado a lado.
       </p>
 
+      {/* La primera columna (nombre de la fila) queda fija al scrollear
+          horizontal en mobile -- clave con 3 negocios en pantallas chicas. */}
       <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[560px] border-collapse text-sm">
+        <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-b border-border">
-                <th className="w-40 shrink-0 py-3 pr-4 text-left align-top text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <tr key={row.label}>
+                <th className="sticky left-0 z-10 w-40 shrink-0 border-b border-r border-border bg-background py-3 pr-4 text-left align-top text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {row.label}
                 </th>
                 {businesses.map((b) => (
-                  <td key={b.id} className="py-3 pr-4 align-top">
+                  <td key={b.id} className="border-b border-border py-3 pr-4 pl-4 align-top">
                     {row.render(b)}
                   </td>
                 ))}
