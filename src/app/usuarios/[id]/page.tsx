@@ -42,11 +42,24 @@ function waLink(phone: string) {
   return `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
 }
 
-function SpecItem({ label, value }: { label: string; value: string }) {
+// Ficha estandarizada: el campo siempre ocupa su lugar en el mismo orden,
+// vacio o no -- si no hay dato muestra "Sin datos" en gris en vez de
+// desaparecer y correr el resto del layout.
+function SpecItem({
+  label,
+  value,
+  fullWidth = false,
+}: {
+  label: string;
+  value: string | null | undefined;
+  fullWidth?: boolean;
+}) {
   return (
-    <div>
+    <div className={fullWidth ? "sm:col-span-2" : undefined}>
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
+      <p className={value ? "text-sm font-medium" : "text-sm text-muted-foreground/70 italic"}>
+        {value || "Sin datos"}
+      </p>
     </div>
   );
 }
@@ -252,22 +265,28 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </div>
           )}
 
-          {/* Ficha ampliada: horarios y specs de produccion, todo opcional. */}
-          {business &&
-            (business.hoursText || business.minProduction || business.leadTime || business.fabricTypes || business.acceptsOwnPatterns != null) && (
-              <div className="mt-5 grid grid-cols-1 gap-3 border-t border-border pt-5 sm:grid-cols-2">
-                {business.hoursText && <SpecItem label="Horario de atención" value={business.hoursText} />}
-                {business.minProduction && <SpecItem label="Mínimo de producción" value={business.minProduction} />}
-                {business.leadTime && <SpecItem label="Tiempo de entrega estimado" value={business.leadTime} />}
-                {business.fabricTypes && <SpecItem label="Tipos de tela" value={business.fabricTypes} />}
-                {business.acceptsOwnPatterns != null && (
-                  <SpecItem
-                    label="Moldes propios"
-                    value={business.acceptsOwnPatterns ? "Acepta moldes del cliente" : "No acepta moldes del cliente"}
-                  />
-                )}
-              </div>
-            )}
+          {/* Ficha estandarizada: mismos campos, mismo orden, siempre --
+              "Sin datos" en gris en vez de esconder la fila. */}
+          {business && (
+            <div className="mt-5 grid grid-cols-1 gap-3 border-t border-border pt-5 sm:grid-cols-2">
+              <SpecItem label="Descripción" value={business.description} fullWidth />
+              <SpecItem label="Dirección" value={business.addressText} />
+              <SpecItem label="Horario de atención" value={business.hoursText} />
+              <SpecItem label="Mínimo de producción" value={business.minProduction} />
+              <SpecItem label="Tiempo de entrega estimado" value={business.leadTime} />
+              <SpecItem label="Tipos de tela" value={business.fabricTypes} />
+              <SpecItem
+                label="Moldes propios"
+                value={
+                  business.acceptsOwnPatterns == null
+                    ? null
+                    : business.acceptsOwnPatterns
+                      ? "Acepta moldes del cliente"
+                      : "No acepta moldes del cliente"
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 
