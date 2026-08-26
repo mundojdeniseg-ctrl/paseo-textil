@@ -4,6 +4,9 @@ import { getCategories, getListings, getCategoryBySlug, ListingSort } from "@/li
 import { getSavedIds } from "@/lib/data/favorites";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
+import { FilterPanel } from "@/components/filter-panel";
+
+const FILTERS_FORM_ID = "anuncios-filtros";
 
 export async function generateMetadata({
   searchParams,
@@ -28,17 +31,33 @@ export async function generateMetadata({
 export default async function AnunciosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; q?: string; ciudad?: string; verificados?: string; orden?: string }>;
+  searchParams: Promise<{
+    categoria?: string;
+    q?: string;
+    ciudad?: string;
+    verificados?: string;
+    orden?: string;
+    precioMin?: string;
+    precioMax?: string;
+  }>;
 }) {
-  const { categoria, q, ciudad, verificados, orden } = await searchParams;
+  const { categoria, q, ciudad, verificados, orden, precioMin, precioMax } = await searchParams;
   const sort: ListingSort | undefined =
     orden === "destacados" || orden === "mejor_puntuados" ? orden : undefined;
   const verifiedOnly = verificados === "1";
+  const minPrice = precioMin && !Number.isNaN(Number(precioMin)) ? Number(precioMin) : undefined;
+  const maxPrice = precioMax && !Number.isNaN(Number(precioMax)) ? Number(precioMax) : undefined;
 
   const [listings, categories] = await Promise.all([
-    getListings({ categorySlug: categoria, query: q, city: ciudad, verifiedOnly, sort }),
+    getListings({ categorySlug: categoria, query: q, city: ciudad, verifiedOnly, sort, minPrice, maxPrice }),
     getCategories(),
   ]);
+
+  // Para el contador del boton "Filtros" y para saber si mostrar "Limpiar filtros".
+  const extraFiltersCount = [ciudad, verifiedOnly, sort, minPrice != null || maxPrice != null].filter(
+    Boolean
+  ).length;
+  const hasAnyFilter = Boolean(categoria || q || extraFiltersCount > 0);
 
   let isLoggedIn = false;
   let savedIds = new Set<string>();
@@ -51,14 +70,16 @@ export default async function AnunciosPage({
     if (user) savedIds = await getSavedIds(user.id, "listing");
   }
 
-  // Los filtros extra (ciudad, orden, categoria, texto) viajan como hidden
-  // inputs en cada form/link para no perderse entre si.
+  // Los filtros extra (ciudad, orden, categoria, texto, precio) viajan como
+  // hidden inputs en cada form/link para no perderse entre si.
   const baseParams: Record<string, string> = {};
   if (categoria) baseParams.categoria = categoria;
   if (q) baseParams.q = q;
   if (ciudad) baseParams.ciudad = ciudad;
   if (verifiedOnly) baseParams.verificados = "1";
   if (sort) baseParams.orden = sort;
+  if (minPrice != null) baseParams.precioMin = String(minPrice);
+  if (maxPrice != null) baseParams.precioMax = String(maxPrice);
 
   function hrefWith(overrides: Record<string, string | undefined>) {
     const params = { ...baseParams, ...overrides };
@@ -81,7 +102,7 @@ export default async function AnunciosPage({
         {q ? ` para "${q}"` : ""}
       </p>
 
-      <form action="/anuncios" className="mt-6 flex flex-wrap gap-2">
+      <form id={FILTERS_FORM_ID} action="/anuncios" className="mt-6 flex flex-wrap items-center gap-2">
         {categoria && <input type="hidden" name="categoria" value={categoria} />}
         <input
           type="text"
@@ -90,26 +111,86 @@ export default async function AnunciosPage({
           placeholder="Buscar por título o descripción..."
           className="h-11 flex-1 min-w-[180px] rounded-full border border-border bg-background px-5 text-sm outline-none ring-primary/30 focus:ring-2"
         />
-        <input
-          type="text"
-          name="ciudad"
-          defaultValue={ciudad}
-          placeholder="Ciudad"
-          className="h-11 w-36 rounded-full border border-border bg-background px-5 text-sm outline-none ring-primary/30 focus:ring-2"
-        />
-        <select
-          name="orden"
-          defaultValue={sort ?? "recientes"}
-          className="h-11 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-        >
-          <option value="recientes">Más nuevos</option>
-          <option value="destacados">Destacados</option>
-          <option value="mejor_puntuados">Mejor puntuados</option>
-        </select>
-        <label className="flex h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm">
-          <input type="checkbox" name="verificados" value="1" defaultChecked={verifiedOnly} className="h-4 w-4 rounded" />
-          Solo verificados
-        </label>
+
+        <FilterPanel activeCount={extraFiltersCount} formId={FILTERS_FORM_ID}>
+          <div>
+            <label htmlFor="ciudad" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Ciudad
+            </label>
+            <input
+              id="ciudad"
+              type="text"
+              name="ciudad"
+              form={FILTERS_FORM_ID}
+              defaultValue={ciudad}
+              placeholder="Ej: Rosario"
+              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Precio</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="number"
+                name="precioMin"
+                form={FILTERS_FORM_ID}
+                defaultValue={minPrice ?? ""}
+                placeholder="Mín."
+                min={0}
+                aria-label="Precio mínimo"
+                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+              />
+              <span className="text-muted-foreground">–</span>
+              <input
+                type="number"
+                name="precioMax"
+                form={FILTERS_FORM_ID}
+                defaultValue={maxPrice ?? ""}
+                placeholder="Máx."
+                min={0}
+                aria-label="Precio máximo"
+                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="orden" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Ordenar por
+            </label>
+            <select
+              id="orden"
+              name="orden"
+              form={FILTERS_FORM_ID}
+              defaultValue={sort ?? "recientes"}
+              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            >
+              <option value="recientes">Más nuevos</option>
+              <option value="destacados">Destacados</option>
+              <option value="mejor_puntuados">Mejor puntuados</option>
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="verificados"
+              value="1"
+              form={FILTERS_FORM_ID}
+              defaultChecked={verifiedOnly}
+              className="h-4 w-4 rounded"
+            />
+            Solo negocios verificados
+          </label>
+        </FilterPanel>
+
+        {hasAnyFilter && (
+          <Link href="/anuncios" className="text-sm text-muted-foreground underline hover:text-foreground">
+            Limpiar filtros
+          </Link>
+        )}
+
         <button
           type="submit"
           className="h-11 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground"

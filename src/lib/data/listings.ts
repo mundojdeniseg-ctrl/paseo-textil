@@ -17,6 +17,8 @@ export type ListingFilters = {
   city?: string;
   verifiedOnly?: boolean;
   sort?: ListingSort;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 function categoryName(name: unknown): string {
@@ -128,6 +130,20 @@ export async function getListings(filters: ListingFilters = {}): Promise<Listing
   // que con relaciones opcionales puede comportarse como inner join).
   if (filters.verifiedOnly) {
     listings = listings.filter((l) => l.businessProfile?.verificationStatus === "verificado");
+  }
+
+  // Precio (CUANTO): se compara contra el precio "efectivo" que ve el
+  // usuario en la tarjeta (minorista si hay, si no mayorista). Un anuncio
+  // a consultar o sin ningun precio cargado no puede matchear un rango.
+  if (filters.minPrice != null || filters.maxPrice != null) {
+    listings = listings.filter((l) => {
+      if (l.priceOnRequest) return false;
+      const price = l.priceRetail ?? l.priceWholesale;
+      if (price == null) return false;
+      if (filters.minPrice != null && price < filters.minPrice) return false;
+      if (filters.maxPrice != null && price > filters.maxPrice) return false;
+      return true;
+    });
   }
 
   // Reseñas: se calculan aparte (no vienen del join) y se pegan al
